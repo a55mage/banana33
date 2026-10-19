@@ -4,8 +4,12 @@ import { Toolbar } from './ui/Toolbar'
 import { LeftPanel } from './ui/LeftPanel'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { StatusBar } from './ui/StatusBar'
-import { useProject, deleteSelection, rotateSelection } from './store/projectStore'
-import { useUi } from './store/uiStore'
+import { useProject } from './store/projectStore'
+import { handleShortcut } from './ui/shortcuts'
+import { ShortcutsHelp } from './ui/ShortcutsHelp'
+import { useApplyTheme } from './theme'
+import { useLang } from './i18n'
+import { ToolBanner } from './ui/ToolBanner'
 import { lastProjectId, loadProject, saveProject } from './persistence/db'
 
 const AUTOSAVE_MS = 500
@@ -40,47 +44,28 @@ function useRestoreAndAutosave() {
 
 function useShortcuts() {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      if (target.closest('input, select, textarea')) return
-      const ui = useUi.getState()
-      const ctrl = e.ctrlKey || e.metaKey
-      const k = e.key.toLowerCase()
-      if (ctrl && k === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) useProject.getState().redo()
-        else useProject.getState().undo()
-      } else if (ctrl && k === 'y') {
-        e.preventDefault()
-        useProject.getState().redo()
-      } else if (ctrl) {
-        return
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        deleteSelection()
-      } else if (e.key === 'Escape') {
-        if (ui.wallDraft) ui.setWallDraft(null)
-        else ui.setSelection(null)
-      } else if (k === 'r') rotateSelection(90)
-      else if (k === 'v') ui.setTool('select')
-      else if (k === 'm') ui.setTool('wall')
-      else if (k === 'p') ui.setTool('door')
-      else if (k === 'f') ui.setTool('window')
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
   }, [])
 }
 
 export function App() {
   const ready = useRestoreAndAutosave()
   useShortcuts()
+  useApplyTheme()
+  const lang = useLang((s) => s.lang)
+  useEffect(() => void (document.documentElement.lang = lang), [lang])
   return (
     <div className="app">
       <Toolbar />
       <LeftPanel />
-      <main className="viewport">{ready && <Viewport />}</main>
+      <main className="viewport">
+        {ready && <Viewport />}
+        <ToolBanner />
+      </main>
       <PropertiesPanel />
       <StatusBar />
+      <ShortcutsHelp />
     </div>
   )
 }

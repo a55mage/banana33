@@ -1,24 +1,35 @@
+import { faCircleCheck, faEyeSlash, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { useProject } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
 import { findCollisions } from '../geometry/collision'
+import { formatLength } from '../units'
+import { useT } from '../i18n'
+import { Icon } from './Icon'
 
 export function StatusBar() {
+  const t = useT()
   const project = useProject((s) => s.project)
   const cursor = useUi((s) => s.cursor)
+  const showCollisions = useUi((s) => s.showCollisions)
   const { ids, outOfBounds } = findCollisions(project)
   return (
     <footer className="statusbar">
-      {ids.size === 0 ? (
-        <span className="ok">✓ Nessuna collisione</span>
+      {!showCollisions ? (
+        <span>
+          <Icon icon={faEyeSlash} /> {t.status.hidden}
+        </span>
+      ) : ids.size === 0 ? (
+        <span className="ok">
+          <Icon icon={faCircleCheck} /> {t.status.noCollisions}
+        </span>
       ) : (
         <span className="warn">
-          ⚠ {ids.size} oggetti in conflitto{outOfBounds > 0 && ` (${outOfBounds} fuori dallo spazio)`}
+          <Icon icon={faTriangleExclamation} /> {t.status.conflicts(ids.size)}
+          {outOfBounds > 0 && t.status.outOfBounds(outOfBounds)}
         </span>
       )}
-      <span>
-        {project.objects.length} oggetti · {project.walls.length} muri · {project.openings.length} aperture
-      </span>
-      <span className="mono">{cursor ? `x ${Math.round(cursor[0] * 100)} · y ${Math.round(cursor[1] * 100)} cm` : ''}</span>
+      <span>{t.status.counts(project.objects.length, project.walls.length, project.openings.length)}</span>
+      <span className="mono">{cursor ? `x ${formatLength(cursor[0], project.unit)} · y ${formatLength(cursor[1], project.unit)}` : ''}</span>
     </footer>
   )
 }

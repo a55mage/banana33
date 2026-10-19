@@ -6,12 +6,12 @@ import { useUi } from '../store/uiStore'
 import { offsetOnWall, pointAlong, wallFrame, wallPieces } from '../geometry/walls'
 import { dist } from '../geometry/vec'
 import { OPENING_DEFAULTS } from '../model/factory'
+import { formatLength, useUnit } from '../units'
+import { useSceneTheme } from '../theme'
 
-const WALL_COLOR_PLAN = '#6f6a5f'
-const WALL_COLOR_3D = '#d9d4c7'
-const SELECTED_COLOR = '#2f6fed'
 
 function WallMesh({ wall, openings, selected, plan }: { wall: Wall; openings: Opening[]; selected: boolean; plan: boolean }) {
+  const theme = useSceneTheme()
   const { angle } = wallFrame(wall)
   // in pianta si mostra la sezione orizzontale: niente architravi né parapetti sopra/sotto le aperture
   const pieces = wallPieces(wall, openings).filter((p) => !plan || p.part === 'solid')
@@ -35,7 +35,7 @@ function WallMesh({ wall, openings, selected, plan }: { wall: Wall; openings: Op
       {pieces.map((p, i) => (
         <mesh key={i} position={p.center} rotation={[0, angle, 0]} castShadow receiveShadow>
           <boxGeometry args={[p.length, p.height, wall.thickness]} />
-          <meshStandardMaterial color={selected ? SELECTED_COLOR : plan ? WALL_COLOR_PLAN : WALL_COLOR_3D} />
+          <meshStandardMaterial color={selected ? theme.selected : plan ? theme.wallPlan : theme.wall3d} />
         </mesh>
       ))}
       {openings.map((op) => (
@@ -70,13 +70,14 @@ function DoorSwing({ wall, op, color }: { wall: Wall; op: Opening; color: string
 
 function OpeningMesh({ wall, op, plan }: { wall: Wall; op: Opening; plan: boolean }) {
   const selected = useUi((s) => s.selection?.type === 'opening' && s.selection.id === op.id)
+  const theme = useSceneTheme()
   const { angle } = wallFrame(wall)
   const [x, z] = pointAlong(wall, op.offset)
   const isDoor = op.kind === 'door'
   const depth = isDoor ? wall.thickness * 0.3 : wall.thickness * 0.4
   return (
     <>
-    {plan && isDoor && <DoorSwing wall={wall} op={op} color={selected ? SELECTED_COLOR : '#5b4636'} />}
+    {plan && isDoor && <DoorSwing wall={wall} op={op} color={selected ? theme.selected : theme.doorPlan} />}
     <mesh
       position={[x, op.sill + op.height / 2, z]}
       rotation={[0, angle, 0]}
@@ -88,7 +89,7 @@ function OpeningMesh({ wall, op, plan }: { wall: Wall; op: Opening; plan: boolea
     >
       <boxGeometry args={[op.width, op.height, depth]} />
       <meshStandardMaterial
-        color={selected ? SELECTED_COLOR : isDoor ? '#a0703c' : '#8ec5e8'}
+        color={selected ? theme.selected : isDoor ? '#a0703c' : '#8ec5e8'}
         transparent={!isDoor}
         opacity={isDoor ? 1 : 0.55}
       />
@@ -122,19 +123,21 @@ export function WallDraft() {
   const draft = useUi((s) => s.wallDraft)
   const cursor = useUi((s) => s.cursor)
   const tool = useUi((s) => s.tool)
+  const unit = useUnit()
+  const theme = useSceneTheme()
   if (tool !== 'wall' || !cursor) return null
   const y = 0.02
   return (
     <>
       <mesh position={[cursor[0], y, cursor[1]]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
         <circleGeometry args={[0.06, 24]} />
-        <meshBasicMaterial color={SELECTED_COLOR} />
+        <meshBasicMaterial color={theme.selected} />
       </mesh>
       {draft && (
         <>
-          <Line points={[[draft[0], y, draft[1]], [cursor[0], y, cursor[1]]]} color={SELECTED_COLOR} lineWidth={2} dashed dashSize={0.1} gapSize={0.05} />
+          <Line points={[[draft[0], y, draft[1]], [cursor[0], y, cursor[1]]]} color={theme.selected} lineWidth={2} dashed dashSize={0.1} gapSize={0.05} />
           <Html position={[(draft[0] + cursor[0]) / 2, y, (draft[1] + cursor[1]) / 2]} center style={{ pointerEvents: 'none' }}>
-            <div className="obj-label">{Math.round(dist(draft, cursor) * 100)} cm</div>
+            <div className="obj-label">{formatLength(dist(draft, cursor), unit)}</div>
           </Html>
         </>
       )}

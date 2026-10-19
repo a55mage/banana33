@@ -1,31 +1,77 @@
 import { useRef } from 'react'
-import { useProject } from '../store/projectStore'
-import { useUi, type Tool } from '../store/uiStore'
+import {
+  faCircleHalfStroke,
+  faCrosshairs,
+  faCube,
+  faDownload,
+  faFolderOpen,
+  faKeyboard,
+  faLanguage,
+  faMap,
+  faMoon,
+  faPenRuler,
+  faRotateLeft,
+  faRotateRight,
+  faSquarePlus,
+  faSun,
+  faTriangleExclamation,
+  faUpload,
+} from '@fortawesome/free-solid-svg-icons'
+import { useProject, setUnit } from '../store/projectStore'
+import { useUi } from '../store/uiStore'
 import { downloadProject, FILE_EXT, readProjectFile } from '../persistence/file'
 import { newProject } from '../model/factory'
+import type { Unit } from '../model/schema'
+import { formatLength, SNAP_STEPS, UNITS, useUnit } from '../units'
+import { useThemePref, type ThemePref } from '../theme'
+import { getT, LANG_LABELS, useLang, useT, type Lang } from '../i18n'
+import { Icon } from './Icon'
+import { Menu } from './Menu'
 
-const TOOLS: { id: Tool; label: string; key: string }[] = [
-  { id: 'select', label: 'Seleziona', key: 'V' },
-  { id: 'wall', label: 'Muro', key: 'M' },
-  { id: 'door', label: 'Porta', key: 'P' },
-  { id: 'window', label: 'Finestra', key: 'F' },
-]
+const THEMES: Record<ThemePref, { icon: typeof faSun; next: ThemePref }> = {
+  system: { icon: faCircleHalfStroke, next: 'light' },
+  light: { icon: faSun, next: 'dark' },
+  dark: { icon: faMoon, next: 'system' },
+}
 
-const SNAPS = [
-  { v: 0, label: 'libero' },
-  { v: 0.01, label: '1 cm' },
-  { v: 0.05, label: '5 cm' },
-  { v: 0.1, label: '10 cm' },
-  { v: 0.5, label: '50 cm' },
-]
+function ThemeToggle() {
+  const t = useT()
+  const pref = useThemePref((s) => s.pref)
+  const theme = THEMES[pref]
+  return (
+    <button className="icon-btn" onClick={() => useThemePref.getState().setPref(theme.next)} title={t.toolbar.themeTitle(t.toolbar.theme[pref])}>
+      <Icon icon={theme.icon} />
+    </button>
+  )
+}
+
+function LanguageSelect() {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+  return (
+    <label className="inline select-with-icon" title={t.toolbar.language}>
+      <Icon icon={faLanguage} />
+      <select value={lang} onChange={(e) => useLang.getState().setLang(e.target.value as Lang)} aria-label={t.toolbar.language}>
+        {(Object.keys(LANG_LABELS) as Lang[]).map((l) => (
+          <option key={l} value={l}>
+            {LANG_LABELS[l]}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
 
 export function Toolbar() {
+  const t = useT()
   const name = useProject((s) => s.project.name)
   const canUndo = useProject((s) => s.past.length > 0)
   const canRedo = useProject((s) => s.future.length > 0)
-  const tool = useUi((s) => s.tool)
   const view = useUi((s) => s.view)
   const snap = useUi((s) => s.snap)
+  const showCollisions = useUi((s) => s.showCollisions)
+  const unit = useUnit()
+  const snaps = SNAP_STEPS[UNITS[unit].system]
   const { setTool, setView, setSnap } = useUi.getState()
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -35,41 +81,45 @@ export function Toolbar() {
       const p = await readProjectFile(file)
       useProject.getState().load(p)
     } catch (err) {
-      alert(`File non valido: ${err instanceof Error ? err.message : String(err)}`)
+      alert(getT().app.invalidFile(err instanceof Error ? err.message : String(err)))
     }
   }
 
   return (
     <header className="toolbar">
       <div className="group">
-        <strong className="brand">banana33</strong>
+        <strong className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          banana33
+        </strong>
         <input
           className="project-name"
           value={name}
           onChange={(e) => useProject.getState().mutate((d) => void (d.name = e.target.value), { history: false })}
-          aria-label="Nome progetto"
+          aria-label={t.app.projectName}
         />
       </div>
 
       <div className="group">
-        <button onClick={() => useProject.getState().load(newProject('space'))} title="Nuovo progetto di verifica ingombri">
-          + Spazio
-        </button>
-        <button
-          onClick={() => {
-            useProject.getState().load(newProject('plan'))
-            setTool('wall')
-          }}
-          title="Nuova planimetria"
-        >
-          + Planimetria
-        </button>
-        <button onClick={() => downloadProject(useProject.getState().project)} title="Scarica il progetto come file">
-          ⬇ Scarica
-        </button>
-        <button onClick={() => fileInput.current?.click()} title="Carica un progetto da file">
-          ⬆ Carica
-        </button>
+        <Menu
+          icon={faFolderOpen}
+          label={t.toolbar.project}
+          items={[
+            { icon: faSquarePlus, label: t.toolbar.newSpace, title: t.toolbar.newSpaceTitle, onSelect: () => useProject.getState().load(newProject('space')) },
+            {
+              icon: faPenRuler,
+              label: t.toolbar.newPlan,
+              title: t.toolbar.newPlanTitle,
+              onSelect: () => {
+                useProject.getState().load(newProject('plan'))
+                setTool('wall')
+              },
+            },
+            'separator',
+            { icon: faDownload, label: t.toolbar.download, title: t.toolbar.downloadTitle, onSelect: () => downloadProject(useProject.getState().project) },
+            { icon: faUpload, label: t.toolbar.upload, title: t.toolbar.uploadTitle, onSelect: () => fileInput.current?.click() },
+          ]}
+        />
         <input
           ref={fileInput}
           type="file"
@@ -83,41 +133,66 @@ export function Toolbar() {
       </div>
 
       <div className="group">
-        <button disabled={!canUndo} onClick={() => useProject.getState().undo()} title="Annulla (Ctrl+Z)">
-          ↶
+        <button className="icon-btn" disabled={!canUndo} onClick={() => useProject.getState().undo()} title={t.toolbar.undo} aria-label={t.toolbar.undo}>
+          <Icon icon={faRotateLeft} />
         </button>
-        <button disabled={!canRedo} onClick={() => useProject.getState().redo()} title="Ripeti (Ctrl+Y)">
-          ↷
+        <button className="icon-btn" disabled={!canRedo} onClick={() => useProject.getState().redo()} title={t.toolbar.redo} aria-label={t.toolbar.redo}>
+          <Icon icon={faRotateRight} />
         </button>
-      </div>
-
-      <div className="group segmented">
-        {TOOLS.map((t) => (
-          <button key={t.id} className={tool === t.id ? 'active' : ''} onClick={() => setTool(t.id)} title={`${t.label} (${t.key})`}>
-            {t.label}
-          </button>
-        ))}
       </div>
 
       <div className="group">
         <label className="inline">
-          Snap
-          <select value={snap} onChange={(e) => setSnap(Number(e.target.value))}>
-            {SNAPS.map((s) => (
-              <option key={s.v} value={s.v}>
-                {s.label}
+          {t.toolbar.unit}
+          <select value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
+            {(Object.keys(UNITS) as Unit[]).map((u) => (
+              <option key={u} value={u}>
+                {UNITS[u].label}
               </option>
             ))}
           </select>
         </label>
+        <label className="inline">
+          {t.toolbar.snap}
+          <select value={snap} onChange={(e) => setSnap(Number(e.target.value))}>
+            {!snaps.includes(snap) && <option value={snap}>{formatLength(snap, unit)}</option>}
+            {snaps.map((v) => (
+              <option key={v} value={v}>
+                {v === 0 ? t.toolbar.snapFree : formatLength(v, unit, 2)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="group">
         <div className="segmented">
-          <button className={view === '2d' ? 'active' : ''} onClick={() => setView('2d')}>
-            2D
+          <button className={view === '2d' ? 'active' : ''} onClick={() => setView('2d')} title="2D (2)">
+            <Icon icon={faMap} /> 2D
           </button>
-          <button className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')}>
-            3D
+          <button className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')} title="3D (3)">
+            <Icon icon={faCube} /> 3D
           </button>
         </div>
+        <button onClick={() => useUi.getState().requestFit()} title={t.toolbar.centerTitle}>
+          <Icon icon={faCrosshairs} /> {t.toolbar.center}
+        </button>
+        <button
+          className={`toggle${showCollisions ? ' on' : ''}`}
+          aria-pressed={showCollisions}
+          onClick={() => useUi.getState().toggleCollisions()}
+          title={t.toolbar.collisionsTitle(showCollisions)}
+        >
+          <Icon icon={faTriangleExclamation} /> {t.toolbar.collisions}
+        </button>
+      </div>
+
+      <div className="group end">
+        <LanguageSelect />
+        <ThemeToggle />
+        <button className="icon-btn" onClick={() => useUi.getState().setShowHelp(true)} title={t.toolbar.help} aria-label={t.toolbar.help}>
+          <Icon icon={faKeyboard} />
+        </button>
       </div>
     </header>
   )

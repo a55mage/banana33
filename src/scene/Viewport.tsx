@@ -5,19 +5,35 @@ import type { Vec2 } from '../model/schema'
 import { useProject, addWall } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
 import { layoutBounds } from '../geometry/autoLayout'
+import { aabbOf, objectFootprint } from '../geometry/footprint'
 import { dist, snapValue } from '../geometry/vec'
 import { SceneObjects } from './SceneObjects'
 import { Walls, WallDraft } from './Walls'
 import { SpaceBox } from './SpaceBox'
+import { GRID, UNITS, useUnit } from '../units'
+import { useSceneTheme } from '../theme'
 
 const ENDPOINT_SNAP = 0.15
 
-function sceneExtent() {
-  const b = layoutBounds(useProject.getState().project)
+/** Area da inquadrare: lo spazio contenitore, altrimenti muri e oggetti */
+function sceneExtent(view: '2d' | '3d') {
+  const p = useProject.getState().project
+  let b = layoutBounds(p)
+  let height = p.space?.height ?? Math.max(0, ...p.walls.map((w) => w.height))
+  if (!p.space) {
+    for (const o of p.objects) {
+      const box = aabbOf(objectFootprint(o))
+      b = b
+        ? { minX: Math.min(b.minX, box.minX), minZ: Math.min(b.minZ, box.minZ), maxX: Math.max(b.maxX, box.maxX), maxZ: Math.max(b.maxZ, box.maxZ) }
+        : box
+      height = Math.max(height, o.elevation + o.size[1])
+    }
+  }
   if (!b) return { center: [0, 0] as Vec2, size: 6 }
+  const footprint = Math.max(b.maxX - b.minX, b.maxZ - b.minZ)
   return {
     center: [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2] as Vec2,
-    size: Math.max(b.maxX - b.minX, b.maxZ - b.minZ, 2),
+    size: Math.max(view === '3d' ? Math.max(footprint, height * 0.8) : footprint, 0.3),
   }
 }
 
@@ -25,23 +41,28 @@ function sceneExtent() {
 function Cameras() {
   const view = useUi((s) => s.view)
   const drag = useUi((s) => s.drag)
+  const fitNonce = useUi((s) => s.fitNonce)
   const projectId = useProject((s) => s.project.id)
-  const { size: viewport } = useThree((s) => s)
-  // ricalcola l'inquadratura solo cambiando vista o progetto
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { center, size } = useMemo(sceneExtent, [view, projectId])
-  const [cx, cz] = center
-  const zoom = Math.min(viewport.width, viewport.height) / (size * 1.4)
+  const viewport = useThree((s) => s.size)
+  // reinquadra solo cambiando vista o progetto, o su richiesta ("Centra vista")
+  const frame = useMemo(() => {
+    const { center, size } = sceneExtent(view)
+    return { center, size, zoom: Math.min(viewport.width, viewport.height) / (size * 1.4) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, projectId, fitNonce])
+  const [cx, cz] = frame.center
+  const { size } = frame
+  const key = `${view}-${projectId}-${fitNonce}`
 
   return (
     <>
       {view === '2d' ? (
-        <OrthographicCamera key={`o-${projectId}`} makeDefault position={[cx, 50, cz + 0.001]} zoom={zoom} near={0.1} far={500} />
+        <OrthographicCamera key={`cam-${key}`} makeDefault position={[cx, 50, cz + 0.001]} zoom={frame.zoom} near={0.1} far={200} />
       ) : (
-        <PerspectiveCamera key={`p-${projectId}`} makeDefault position={[cx + size * 0.9, size * 1.4, cz + size * 1.7]} fov={45} near={0.05} far={500} />
+        <PerspectiveCamera key={`cam-${key}`} makeDefault position={[cx + size * 0.9, size * 1.4, cz + size * 1.7]} fov={45} near={Math.min(0.1, size / 50)} far={300} />
       )}
       <OrbitControls
-        key={`${view}-${projectId}`}
+        key={`ctl-${key}`}
         makeDefault
         target={[cx, 0, cz]}
         enabled={!drag}
@@ -71,12 +92,25 @@ function Ground() {
     const ui = useUi.getState()
     const raw: Vec2 = [e.point.x, e.point.z]
     if (ui.drag) {
-      const { id, offset } = ui.drag
-      const pos: Vec2 = [snapValue(raw[0] + offset[0], ui.snap), snapValue(raw[1] + offset[1], ui.snap)]
+      // il raggio va intersecato col piano orizzontale alla quota del punto afferrato:
+      // usare il pavimento (y = 0) in prospettiva farebbe "saltare" l'oggetto al primo movimento
+      const { ids, starts, origin: grab, y } = ui.drag
+      const { origin, direction } = e.ray
+      if (Math.abs(direction.y) < 1e-6) return
+      const t = (y - origin.y) / direction.y
+      if (t < 0) return
+      const hit: Vec2 = [origin.x + direction.x * t, origin.z + direction.z * t]
+      // si aggancia alla griglia il primo oggetto e lo stesso spostamento vale per tutti,
+      // così la disposizione relativa di un gruppo resta identica
+      const first: Vec2 = [snapValue(starts[0][0] + hit[0] - grab[0], ui.snap), snapValue(starts[0][1] + hit[1] - grab[1], ui.snap)]
+      const dx = first[0] - starts[0][0]
+      const dz = first[1] - starts[0][1]
       useProject.getState().mutate(
         (d) => {
-          const o = d.objects.find((x) => x.id === id)
-          if (o) o.position = pos
+          ids.forEach((id, i) => {
+            const o = d.objects.find((x) => x.id === id)
+            if (o) o.position = [starts[i][0] + dx, starts[i][1] + dz]
+          })
         },
         { history: false },
       )
@@ -115,6 +149,8 @@ function Ground() {
 
 export function Viewport() {
   const view = useUi((s) => s.view)
+  const grid = GRID[UNITS[useUnit()].system]
+  const theme = useSceneTheme()
 
   useEffect(() => {
     const end = () => useUi.getState().setDrag(null)
@@ -123,24 +159,26 @@ export function Viewport() {
   }, [])
 
   return (
-    <Canvas shadows dpr={[1, 2]} onContextMenu={(e) => e.preventDefault()}>
-      <color attach="background" args={['#f3f2ee']} />
+    <Canvas shadows flat dpr={[1, 2]} gl={{ alpha: true }} onContextMenu={(e) => e.preventDefault()}>
       <Cameras />
-      <ambientLight intensity={view === '2d' ? 1.2 : 0.7} />
-      <directionalLight position={[8, 15, 6]} intensity={view === '2d' ? 0.6 : 1.2} castShadow={view === '3d'} shadow-mapSize={[2048, 2048]} />
+      <ambientLight intensity={view === '2d' ? 1.2 : theme.ambient} />
+      <directionalLight position={[8, 15, 6]} color={theme.sunColor} intensity={view === '2d' ? 0.6 : theme.sun} castShadow={view === '3d'} shadow-mapSize={[2048, 2048]} />
+      {/* ordine dal basso: ombre (-8 mm), pavimento dello spazio (-4 mm), griglia (0).
+          Piani distanziati e ombra senza depthWrite evitano lo z-fighting che fa tremare la griglia */}
       <Grid
         args={[100, 100]}
-        position={[0, -0.001, 0]}
-        cellSize={0.1}
-        sectionSize={1}
-        cellColor="#d6d3cb"
-        sectionColor="#b0aca1"
-        fadeDistance={view === '2d' ? 400 : 60}
+        position={[0, 0, 0]}
+        cellSize={grid.cell}
+        sectionSize={grid.section}
+        cellColor={theme.gridCell}
+        sectionColor={theme.gridSection}
+        fadeDistance={view === '2d' ? 150 : 45}
+        fadeStrength={1.5}
         infiniteGrid
       />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow raycast={() => null}>
+      <mesh position={[0, -0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow raycast={() => null}>
         <planeGeometry args={[200, 200]} />
-        <shadowMaterial opacity={0.12} />
+        <shadowMaterial opacity={theme.shadowOpacity} depthWrite={false} />
       </mesh>
       <Ground />
       <SpaceBox />

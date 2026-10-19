@@ -1,10 +1,11 @@
-import type { Project, Vec2 } from '../model/schema'
-import { aabbOf, objectFootprint, polysOverlap, rectPoly, wallFootprint, type AABB, type Poly } from './footprint'
+import type { Project, SceneObject, Vec2 } from '../model/schema'
+import { aabbOf, objectExtents, objectFootprint, polysOverlap, rectPoly, wallFootprint, type AABB, type Poly } from './footprint'
 
 export interface LayoutResult {
   placements: Record<string, { position: Vec2; rotation: number }>
   unplaced: string[]
-  error?: string
+  /** nessuna area disponibile (né spazio né muri) */
+  noArea?: boolean
 }
 
 /** Area disponibile: lo spazio, oppure il rettangolo che racchiude i muri */
@@ -20,16 +21,85 @@ export function layoutBounds(p: Project): AABB | null {
   }))
 }
 
+/** Variante di posizionamento di un'unità: ingombro AABB e come applicarla data la posizione */
+interface UnitOption {
+  w: number
+  d: number
+  place: (minX: number, minZ: number) => Record<string, { position: Vec2; rotation: number }>
+}
+
+/** Oggetto singolo o gruppo, che si dispone come un blocco rigido */
+interface LayoutUnit {
+  ids: string[]
+  area: number
+  /** quota massima raggiunta (per il controllo dell'altezza dello spazio) */
+  top: number
+  options: UnitOption[]
+}
+
+function unionBox(boxes: AABB[]): AABB {
+  return boxes.reduce((a, b) => ({
+    minX: Math.min(a.minX, b.minX),
+    minZ: Math.min(a.minZ, b.minZ),
+    maxX: Math.max(a.maxX, b.maxX),
+    maxZ: Math.max(a.maxZ, b.maxZ),
+  }))
+}
+
+function objectUnit(o: SceneObject): LayoutUnit {
+  // un oggetto prova l'orientamento attuale e quello ruotato di 90°
+  const rotations = Math.abs(o.rotation % 180) === 90 ? [90, 0] : [0, 90]
+  const options = rotations.map((rotation): UnitOption => {
+    const box = aabbOf(objectFootprint({ ...o, rotation, position: [0, 0] }))
+    return {
+      w: box.maxX - box.minX,
+      d: box.maxZ - box.minZ,
+      place: (minX, minZ) => ({ [o.id]: { position: [minX - box.minX, minZ - box.minZ], rotation } }),
+    }
+  })
+  return { ids: [o.id], area: options[0].w * options[0].d, top: o.elevation + objectExtents(o).height, options }
+}
+
+function groupUnit(members: SceneObject[]): LayoutUnit {
+  // un gruppo si sposta senza ruotare, così la disposizione interna resta intatta
+  const box = unionBox(members.map((m) => aabbOf(objectFootprint(m))))
+  const w = box.maxX - box.minX
+  const d = box.maxZ - box.minZ
+  return {
+    ids: members.map((m) => m.id),
+    area: w * d,
+    top: Math.max(...members.map((m) => m.elevation + objectExtents(m).height)),
+    options: [
+      {
+        w,
+        d,
+        place: (minX, minZ) =>
+          Object.fromEntries(
+            members.map((m) => [m.id, { position: [m.position[0] + minX - box.minX, m.position[1] + minZ - box.minZ] as Vec2, rotation: m.rotation }]),
+          ),
+      },
+    ],
+  }
+}
+
 /**
- * Disposizione automatica "bottom-left": gli oggetti non bloccati, dal più grande al più
- * piccolo, vanno nella prima posizione libera (ordinando per Z poi X), provando le
- * rotazioni 0° e 90°. Muri e oggetti bloccati sono ostacoli; `gap` è la distanza minima.
+ * Disposizione automatica "bottom-left": oggetti e gruppi non bloccati, dal più grande al più
+ * piccolo, vanno nella prima posizione libera (ordinando per Z poi X); gli oggetti provano anche
+ * la rotazione di 90°. Muri, oggetti bloccati e gruppi con un membro bloccato sono ostacoli;
+ * `gap` è la distanza minima.
  */
 export function autoLayout(p: Project, gap = 0.05): LayoutResult {
-  const movable = p.objects.filter((o) => !o.locked)
+  const byGroup = new Map<string, SceneObject[]>()
+  for (const o of p.objects) if (o.groupId) byGroup.set(o.groupId, [...(byGroup.get(o.groupId) ?? []), o])
+  const fixed = (o: SceneObject) => o.locked || (o.groupId !== null && byGroup.get(o.groupId)!.some((m) => m.locked))
+
+  const units: LayoutUnit[] = [
+    ...p.objects.filter((o) => !o.groupId && !o.locked).map(objectUnit),
+    ...[...byGroup.values()].filter((ms) => !ms.some((m) => m.locked)).map(groupUnit),
+  ]
   const bounds = layoutBounds(p)
   if (!bounds) {
-    return { placements: {}, unplaced: movable.map((o) => o.id), error: 'Definisci uno spazio o disegna dei muri.' }
+    return { placements: {}, unplaced: units.flatMap((u) => u.ids), noArea: true }
   }
 
   const obstacles: { poly: Poly; box: AABB }[] = []
@@ -38,15 +108,15 @@ export function autoLayout(p: Project, gap = 0.05): LayoutResult {
     const fp = wallFootprint(w)
     if (fp) addObstacle(fp)
   })
-  p.objects.filter((o) => o.locked).forEach((o) => addObstacle(objectFootprint(o)))
+  p.objects.filter(fixed).forEach((o) => addObstacle(objectFootprint(o)))
 
-  const sorted = [...movable].sort((a, b) => b.size[0] * b.size[2] - a.size[0] * a.size[2])
   const result: LayoutResult = { placements: {}, unplaced: [] }
+  const unplacedUnits: LayoutUnit[] = []
   const EPS = 1e-6
 
-  for (const o of sorted) {
-    if (p.space && o.elevation + o.size[1] > p.space.height + EPS) {
-      result.unplaced.push(o.id)
+  for (const unit of [...units].sort((a, b) => b.area - a.area)) {
+    if (p.space && unit.top > p.space.height + EPS) {
+      unplacedUnits.push(unit)
       continue
     }
     // candidati: angolo minimo del rettangolo "gonfiato" di gap
@@ -56,33 +126,32 @@ export function autoLayout(p: Project, gap = 0.05): LayoutResult {
     for (const z of zs) for (const x of xs) candidates.push([x, z])
     candidates.sort((a, b) => a[1] - b[1] || a[0] - b[0])
 
-    const rotations = Math.abs(o.rotation % 180) === 90 ? [90, 0] : [0, 90]
     let placed = false
     for (const [cx, cz] of candidates) {
-      for (const rot of rotations) {
-        const [w, d] = rot === 0 ? [o.size[0], o.size[2]] : [o.size[2], o.size[0]]
+      for (const opt of unit.options) {
         const minX = cx + gap
         const minZ = cz + gap
         if (minX < bounds.minX - EPS || minZ < bounds.minZ - EPS) continue
-        if (minX + w > bounds.maxX + EPS || minZ + d > bounds.maxZ + EPS) continue
-        const inflated = rectPoly(cx, cz, w + 2 * gap, d + 2 * gap)
+        if (minX + opt.w > bounds.maxX + EPS || minZ + opt.d > bounds.maxZ + EPS) continue
+        const inflated = rectPoly(cx, cz, opt.w + 2 * gap, opt.d + 2 * gap)
         if (obstacles.some((ob) => polysOverlap(inflated, ob.poly))) continue
-        result.placements[o.id] = { position: [minX + w / 2, minZ + d / 2], rotation: rot }
-        addObstacle(rectPoly(minX, minZ, w, d))
+        Object.assign(result.placements, opt.place(minX, minZ))
+        addObstacle(rectPoly(minX, minZ, opt.w, opt.d))
         placed = true
         break
       }
       if (placed) break
     }
-    if (!placed) result.unplaced.push(o.id)
+    if (!placed) unplacedUnits.push(unit)
   }
 
   // ciò che non entra viene parcheggiato in colonna a destra dell'area, ben visibile
   let z = bounds.minZ
-  for (const id of result.unplaced) {
-    const o = p.objects.find((x) => x.id === id)!
-    result.placements[id] = { position: [bounds.maxX + 0.5 + o.size[0] / 2, z + o.size[2] / 2], rotation: 0 }
-    z += o.size[2] + 0.2
+  for (const unit of unplacedUnits) {
+    const opt = unit.options[0]
+    Object.assign(result.placements, opt.place(bounds.maxX + 0.5, z))
+    result.unplaced.push(...unit.ids)
+    z += opt.d + 0.2
   }
   return result
 }

@@ -1,5 +1,5 @@
 import type { Project, SceneObject } from '../model/schema'
-import { objectFootprint, polysOverlap, wallFootprint, type Poly } from './footprint'
+import { objectExtents, objectFootprint, polysOverlap, wallFootprint, type Poly } from './footprint'
 
 const EPS = 1e-6
 
@@ -11,7 +11,9 @@ export interface CollisionReport {
 }
 
 function verticalOverlap(a: SceneObject, b: SceneObject) {
-  return a.elevation < b.elevation + b.size[1] - EPS && b.elevation < a.elevation + a.size[1] - EPS
+  const ha = objectExtents(a).height
+  const hb = objectExtents(b).height
+  return a.elevation < b.elevation + hb - EPS && b.elevation < a.elevation + ha - EPS
 }
 
 let cache: { project: Project; report: CollisionReport } | null = null
@@ -36,7 +38,7 @@ export function findCollisions(project: Project): CollisionReport {
       const inside =
         fps[i].every(([x, z]) => x >= -EPS && z >= -EPS && x <= space.width + EPS && z <= space.depth + EPS) &&
         o.elevation >= -EPS &&
-        o.elevation + o.size[1] <= space.height + EPS
+        o.elevation + objectExtents(o).height <= space.height + EPS
       if (!inside) {
         ids.add(o.id)
         outOfBounds++

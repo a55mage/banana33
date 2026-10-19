@@ -10,23 +10,68 @@ export interface AABB {
   maxZ: number
 }
 
+type V3 = [number, number, number]
+
+/** Rotazione Euler in ordine 'YXZ' come three.js: prima Z, poi X, infine Y (gradi) */
+export function rotateEuler([x, y, z]: V3, rxDeg: number, ryDeg: number, rzDeg: number): V3 {
+  const [rx, ry, rz] = [deg2rad(rxDeg), deg2rad(ryDeg), deg2rad(rzDeg)]
+  const x1 = x * Math.cos(rz) - y * Math.sin(rz)
+  const y1 = x * Math.sin(rz) + y * Math.cos(rz)
+  const y2 = y1 * Math.cos(rx) - z * Math.sin(rx)
+  const z2 = y1 * Math.sin(rx) + z * Math.cos(rx)
+  return [x1 * Math.cos(ry) + z2 * Math.sin(ry), y2, -x1 * Math.sin(ry) + z2 * Math.cos(ry)]
+}
+
+/** Inviluppo convesso (monotone chain) */
+function convexHull(points: Vec2[]): Poly {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1])
+  const cross = (o: Vec2, a: Vec2, b: Vec2) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+  const lower: Vec2[] = []
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 1e-12) lower.pop()
+    lower.push(p)
+  }
+  const upper: Vec2[] = []
+  for (const p of [...pts].reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 1e-12) upper.pop()
+    upper.push(p)
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)]
+}
+
+export interface ObjectExtents {
+  /** impronta sul pavimento (poligono convesso) */
+  footprint: Poly
+  /** ingombro verticale dell'oggetto ruotato */
+  height: number
+  /** quota del centro del parallelepipedo rispetto alla quota dell'oggetto */
+  centerY: number
+}
+
+const extentsCache = new WeakMap<SceneObject, ObjectExtents>()
+
 /**
- * Impronta di un oggetto sul pavimento (rettangolo orientato).
- * Usa la stessa convenzione di three.js per rotation.y.
+ * Ingombro di un oggetto ruotato sui tre assi. Il parallelepipedo ruota attorno al suo centro
+ * e viene appoggiato in modo che il punto più basso stia alla quota `elevation`.
  */
+export function objectExtents(o: SceneObject): ObjectExtents {
+  const cached = extentsCache.get(o)
+  if (cached) return cached
+  const [w, h, d] = o.size
+  const corners: V3[] = []
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) corners.push([(sx * w) / 2, (sy * h) / 2, (sz * d) / 2])
+  const rotated = corners.map((c) => rotateEuler(c, o.rotationX, o.rotation, o.rotationZ))
+  const ys = rotated.map((c) => c[1])
+  const minY = Math.min(...ys)
+  const footprint = convexHull(rotated.map(([x, , z]) => [o.position[0] + x, o.position[1] + z] as Vec2))
+  const res: ObjectExtents = { footprint, height: Math.max(...ys) - minY, centerY: -minY }
+  extentsCache.set(o, res)
+  return res
+}
+
+/** Impronta di un oggetto sul pavimento (poligono convesso, anche se inclinato) */
 export function objectFootprint(o: SceneObject): Poly {
-  const r = deg2rad(o.rotation)
-  const c = Math.cos(r)
-  const s = Math.sin(r)
-  const hw = o.size[0] / 2
-  const hd = o.size[2] / 2
-  const corners: Vec2[] = [
-    [-hw, -hd],
-    [hw, -hd],
-    [hw, hd],
-    [-hw, hd],
-  ]
-  return corners.map(([x, z]) => [o.position[0] + x * c + z * s, o.position[1] - x * s + z * c])
+  return objectExtents(o).footprint
 }
 
 export function rectPoly(minX: number, minZ: number, w: number, d: number): Poly {
