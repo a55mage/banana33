@@ -5,6 +5,7 @@ import {
   faExpand,
   faUpDownLeftRight,
   faCircleHalfStroke,
+  faCouch,
   faCrosshairs,
   faCube,
   faDownload,
@@ -24,7 +25,7 @@ import {
 import { useProject, setUnit } from '../store/projectStore'
 import { useUi, type GizmoMode } from '../store/uiStore'
 import { downloadProject, FILE_EXT, readProjectFile } from '../persistence/file'
-import { newProject } from '../model/factory'
+import { newProject, sampleProject } from '../model/factory'
 import type { Unit } from '../model/schema'
 import { formatLength, SNAP_STEPS, UNITS, useUnit } from '../units'
 import { useThemePref, type ThemePref } from '../theme'
@@ -127,6 +128,7 @@ export function Toolbar() {
                 setTool('wall')
               },
             },
+            { icon: faCouch, label: t.toolbar.sample, title: t.toolbar.sampleTitle, onSelect: () => useProject.getState().load(sampleProject()) },
             'separator',
             { icon: faDownload, label: t.toolbar.download, title: t.toolbar.downloadTitle, onSelect: () => downloadProject(useProject.getState().project) },
             { icon: faUpload, label: t.toolbar.upload, title: t.toolbar.uploadTitle, onSelect: () => fileInput.current?.click() },

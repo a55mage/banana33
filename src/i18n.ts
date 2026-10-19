@@ -5,12 +5,14 @@ export type Lang = 'it' | 'en'
 const it = {
   locale: 'it-IT',
   app: { projectName: 'Nome progetto', invalidFile: (msg: string) => `File non valido: ${msg}` },
-  project: { newSpace: 'Nuovo spazio', newPlan: 'Nuova planimetria', copy: 'copia' },
+  project: { newSpace: 'Nuovo spazio', newPlan: 'Nuova planimetria', copy: 'copia', sample: 'Stanza di esempio' },
   toolbar: {
     project: 'Progetto',
     newSpace: 'Nuovo spazio',
     newSpaceTitle: 'Nuovo progetto di verifica ingombri',
     newPlan: 'Nuova planimetria',
+    sample: 'Stanza di esempio',
+    sampleTitle: 'Apri la stanza di esempio con divano, gatto, piccione e banana',
     newPlanTitle: 'Nuova planimetria',
     download: 'Scarica file',
     downloadTitle: 'Scarica il progetto come file',
@@ -264,12 +266,14 @@ export type Dict = typeof it
 const en: Dict = {
   locale: 'en-GB',
   app: { projectName: 'Project name', invalidFile: (msg) => `Invalid file: ${msg}` },
-  project: { newSpace: 'New space', newPlan: 'New floor plan', copy: 'copy' },
+  project: { newSpace: 'New space', newPlan: 'New floor plan', copy: 'copy', sample: 'Sample room' },
   toolbar: {
     project: 'Project',
     newSpace: 'New space',
     newSpaceTitle: 'New fit-check project',
     newPlan: 'New floor plan',
+    sample: 'Sample room',
+    sampleTitle: 'Open the sample room with sofa, cat, pigeon and banana',
     newPlanTitle: 'New floor plan',
     download: 'Download file',
     downloadTitle: 'Download the project as a file',

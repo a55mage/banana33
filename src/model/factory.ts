@@ -129,7 +129,8 @@ export const FURNITURE: PresetGroup[] = [
   },
   {
     id: 'misc',
-    presets: [f('banana', 'banana', [0.2, 0.045, 0.07], '#f2d43d')],
+    // banana33: la banana di default è lunga 33 cm
+    presets: [f('banana', 'banana', [0.33, 0.075, 0.115], '#f2d43d')],
   },
 ]
 
@@ -160,6 +161,49 @@ export function newObject(preset: Preset, position: [number, number]): SceneObje
     model: preset.model ?? null,
     groupId: null,
   }
+}
+
+/** Preset per id (per costruire scene di esempio) */
+function presetById(id: PresetId): Preset {
+  return [...PRIMITIVES, ...FURNITURE.flatMap((g) => g.presets)].find((p) => p.id === id)!
+}
+
+/** Oggetto da preset con posizione, rotazione e quota già impostate */
+function placed(id: PresetId, position: [number, number], rotation = 0, elevation = 0): SceneObject {
+  return { ...newObject(presetById(id), position), rotation, elevation }
+}
+
+/**
+ * Scena di benvenuto: una stanza 5×4 m con porta e finestra, divano, tappeto,
+ * tavolo, gatto, piccione e una banana da 33 cm sul tavolo.
+ */
+export function sampleProject(): Project {
+  const p = newProject('plan')
+  p.name = getT().project.sample
+  const corners: [number, number][] = [
+    [0, 0],
+    [5, 0],
+    [5, 4],
+    [0, 4],
+  ]
+  p.walls = corners.map((a, i) => ({ id: nanoid(), a, b: corners[(i + 1) % 4], ...WALL_DEFAULTS }))
+  const [, east, south] = p.walls
+  p.openings = [
+    // porta sulla parete sud (da (5,4) verso (0,4)), finestra sulla parete est
+    { id: nanoid(), wallId: south.id, kind: 'door', offset: 4, ...OPENING_DEFAULTS.door },
+    { id: nanoid(), wallId: east.id, kind: 'window', offset: 2, ...OPENING_DEFAULTS.window },
+  ]
+  p.objects = [
+    placed('rug', [2.1, 1.9]),
+    placed('sofa3', [2.1, 0.62]),
+    placed('table', [4.2, 2.2], 90),
+    // il gatto riposa sul tappeto (alto 1 cm)
+    placed('cat', [2.4, 2.2], 30, 0.01),
+    placed('pigeon', [4.4, 0.6], 210),
+    // la banana sta sul tavolo (alto 75 cm)
+    placed('banana', [4.2, 2.1], 20, 0.75),
+  ]
+  return p
 }
 
 export const OPENING_DEFAULTS: Record<OpeningKind, { width: number; height: number; sill: number }> = {

@@ -60,7 +60,7 @@ function Cameras() {
       {view === '2d' ? (
         <OrthographicCamera key={`cam-${key}`} makeDefault position={[cx, 50, cz + 0.001]} zoom={frame.zoom} near={0.1} far={200} />
       ) : (
-        <PerspectiveCamera key={`cam-${key}`} makeDefault position={[cx + size * 0.9, size * 1.4, cz + size * 1.7]} fov={45} near={Math.min(0.1, size / 50)} far={300} />
+        <PerspectiveCamera key={`cam-${key}`} makeDefault position={[cx + size * 0.7, size * 1.6, cz + size * 1.2]} fov={45} near={Math.min(0.1, size / 50)} far={300} />
       )}
       <OrbitControls
         key={`ctl-${key}`}

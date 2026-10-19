@@ -11,6 +11,7 @@ import { useApplyTheme } from './theme'
 import { useLang } from './i18n'
 import { ToolBanner } from './ui/ToolBanner'
 import { lastProjectId, loadProject, saveProject } from './persistence/db'
+import { sampleProject } from './model/factory'
 
 const AUTOSAVE_MS = 500
 
@@ -20,7 +21,7 @@ function useRestoreAndAutosave() {
   useEffect(() => {
     const id = lastProjectId()
     void (id ? loadProject(id) : Promise.resolve(null))
-      .then((p) => p && useProject.getState().load(p))
+      .then((p) => useProject.getState().load(p ?? sampleProject()))
       .finally(() => setReady(true))
   }, [])
 
