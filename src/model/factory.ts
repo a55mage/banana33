@@ -158,6 +158,7 @@ export function newObject(preset: Preset, position: [number, number]): SceneObje
     scaleLock: false,
     color: preset.color,
     locked: false,
+    rotationLock: false,
     model: preset.model ?? null,
     groupId: null,
   }

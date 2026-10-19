@@ -165,6 +165,15 @@ function ObjectProps({ o, group }: { o: SceneObject; group: Group | undefined })
       </div>
       <div className="heading-row">
         <h4>{t.props.rotation}</h4>
+        <button
+          className={`icon-btn small toggle${o.rotationLock ? ' on' : ''}`}
+          aria-pressed={o.rotationLock}
+          onClick={() => set({ rotationLock: !o.rotationLock })}
+          title={o.rotationLock ? t.props.rotationUnlock : t.props.rotationLock}
+          aria-label={o.rotationLock ? t.props.rotationUnlock : t.props.rotationLock}
+        >
+          <Icon icon={o.rotationLock ? faLock : faLockOpen} />
+        </button>
         <ResetButton title={t.props.resetRotation} onClick={() => resetObject(o.id, 'rotation')} />
       </div>
       <div className="fields three">

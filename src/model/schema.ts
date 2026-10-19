@@ -25,6 +25,8 @@ export const SceneObjectSchema = z.object({
   color: z.string(),
   /** se bloccato non viene spostato dalla disposizione automatica */
   locked: z.boolean().default(false),
+  /** rotazione bloccata: la disposizione automatica può spostarlo ma non ruotarlo */
+  rotationLock: z.boolean().default(false),
   /** modello 3D di arredo (vedi model/furniture.ts); null = primitiva semplice */
   model: z.string().nullable().default(null),
   /** gruppo di appartenenza (gli oggetti di un gruppo si selezionano e muovono insieme) */
