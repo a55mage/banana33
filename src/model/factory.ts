@@ -173,9 +173,15 @@ function placed(id: PresetId, position: [number, number], rotation = 0, elevatio
   return { ...newObject(presetById(id), position), rotation, elevation }
 }
 
+/** Stesso oggetto, scalato in proporzione fino alla lunghezza (X) indicata */
+function giant(o: SceneObject, length: number): SceneObject {
+  const k = length / o.size[0]
+  return { ...o, size: o.size.map((v) => Math.round(v * k * 1000) / 1000) as SceneObject['size'], scaleLock: true }
+}
+
 /**
- * Scena di benvenuto: una stanza 5×4 m con porta e finestra, divano, tappeto,
- * tavolo, gatto, piccione e una banana da 33 cm sul tavolo.
+ * Scena di benvenuto: una stanza 5×4 m con porta e finestra, divano, tappeto, tavolo,
+ * gatto, piccione, pianta, lampada da terra e una banana gigante.
  */
 export function sampleProject(): Project {
   const p = newProject('plan')
@@ -200,8 +206,10 @@ export function sampleProject(): Project {
     // il gatto riposa sul tappeto (alto 1 cm)
     placed('cat', [2.4, 2.2], 30, 0.01),
     placed('pigeon', [4.4, 0.6], 210),
-    // la banana sta sul tavolo (alto 75 cm)
-    placed('banana', [4.2, 2.1], 20, 0.75),
+    placed('plant', [0.5, 0.5]),
+    placed('floorLamp', [3.55, 0.45]),
+    // banana gigante (1,8 m) sul pavimento; il reset la riporta ai 33 cm del preset
+    giant(placed('banana', [2.6, 3.3], 10), 1.8),
   ]
   return p
 }

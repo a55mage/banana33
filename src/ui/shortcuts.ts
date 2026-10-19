@@ -87,6 +87,8 @@ export function handleShortcut(e: KeyboardEvent) {
       return ui.requestFit()
     case 'k':
       return ui.toggleCollisions()
+    case 'h':
+      return ui.cycleWallMode()
     case '2':
       return ui.setView('2d')
     case '3':

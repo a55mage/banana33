@@ -5,6 +5,9 @@ import {
   faExpand,
   faUpDownLeftRight,
   faCircleHalfStroke,
+  faBorderAll,
+  faScissors,
+  faGripLines,
   faCouch,
   faCrosshairs,
   faCube,
@@ -23,7 +26,7 @@ import {
   faUpload,
 } from '@fortawesome/free-solid-svg-icons'
 import { useProject, setUnit } from '../store/projectStore'
-import { useUi, type GizmoMode } from '../store/uiStore'
+import { useUi, type GizmoMode, type WallMode } from '../store/uiStore'
 import { downloadProject, FILE_EXT, readProjectFile } from '../persistence/file'
 import { newProject, sampleProject } from '../model/factory'
 import type { Unit } from '../model/schema'
@@ -38,6 +41,12 @@ const GIZMOS: { id: GizmoMode; icon: typeof faSun }[] = [
   { id: 'translate', icon: faUpDownLeftRight },
   { id: 'rotate', icon: faArrowsRotate },
   { id: 'scale', icon: faExpand },
+]
+
+const WALL_MODES: { id: WallMode; icon: typeof faSun }[] = [
+  { id: 'up', icon: faBorderAll },
+  { id: 'cutaway', icon: faScissors },
+  { id: 'down', icon: faGripLines },
 ]
 
 const THEMES: Record<ThemePref, { icon: typeof faSun; next: ThemePref }> = {
@@ -83,6 +92,7 @@ export function Toolbar() {
   const snap = useUi((s) => s.snap)
   const showCollisions = useUi((s) => s.showCollisions)
   const gizmo = useUi((s) => s.gizmo)
+  const wallMode = useUi((s) => s.wallMode)
   const unit = useUnit()
   const snaps = SNAP_STEPS[UNITS[unit].system]
   const { setTool, setView, setSnap } = useUi.getState()
@@ -202,6 +212,22 @@ export function Toolbar() {
             </button>
           ))}
         </div>
+        {view === '3d' && (
+          <div className="segmented" role="group" aria-label={t.toolbar.walls}>
+            {WALL_MODES.map((m) => (
+              <button
+                key={m.id}
+                className={`icon-btn${wallMode === m.id ? ' active' : ''}`}
+                aria-pressed={wallMode === m.id}
+                onClick={() => useUi.getState().setWallMode(m.id)}
+                title={`${t.toolbar.wallMode[m.id]} ${t.toolbar.wallModeHint}`}
+                aria-label={t.toolbar.wallMode[m.id]}
+              >
+                <Icon icon={m.icon} />
+              </button>
+            ))}
+          </div>
+        )}
         <button onClick={() => useUi.getState().requestFit()} title={t.toolbar.centerTitle}>
           <Icon icon={faCrosshairs} /> {t.toolbar.center}
         </button>

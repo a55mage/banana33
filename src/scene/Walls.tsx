@@ -1,5 +1,6 @@
 import { Html, Line } from '@react-three/drei'
-import type { ThreeEvent } from '@react-three/fiber'
+import { useMemo, useRef, useState } from 'react'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import type { Opening, Vec2, Wall } from '../model/schema'
 import { useProject, addOpening } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
@@ -9,12 +10,16 @@ import { OPENING_DEFAULTS } from '../model/factory'
 import { formatLength, useUnit } from '../units'
 import { useSceneTheme } from '../theme'
 
+/** Altezza dei muri abbassati (vista "alla The Sims") */
+const LOW_WALL = 0.25
 
-function WallMesh({ wall, openings, selected, plan }: { wall: Wall; openings: Opening[]; selected: boolean; plan: boolean }) {
+function WallMesh({ wall, openings, selected, plan, low }: { wall: Wall; openings: Opening[]; selected: boolean; plan: boolean; low: boolean }) {
   const theme = useSceneTheme()
   const { angle } = wallFrame(wall)
-  // in pianta si mostra la sezione orizzontale: niente architravi né parapetti sopra/sotto le aperture
-  const pieces = wallPieces(wall, openings).filter((p) => !plan || p.part === 'solid')
+  // in pianta si mostra la sezione orizzontale: niente architravi né parapetti sopra/sotto le aperture;
+  // un muro abbassato è lo stesso muro con altezza ridotta (le porte restano come varchi)
+  const shown = low ? { ...wall, height: Math.min(wall.height, LOW_WALL) } : wall
+  const pieces = wallPieces(shown, openings).filter((p) => !plan || p.part === 'solid')
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     const ui = useUi.getState()
@@ -35,12 +40,13 @@ function WallMesh({ wall, openings, selected, plan }: { wall: Wall; openings: Op
       {pieces.map((p, i) => (
         <mesh key={i} position={p.center} rotation={[0, angle, 0]} castShadow receiveShadow>
           <boxGeometry args={[p.length, p.height, wall.thickness]} />
-          <meshStandardMaterial color={selected ? theme.selected : plan ? theme.wallPlan : theme.wall3d} />
+          <meshStandardMaterial color={selected ? theme.selected : plan ? theme.wallPlan : low ? theme.wallCut : theme.wall3d} />
         </mesh>
       ))}
-      {openings.map((op) => (
-        <OpeningMesh key={op.id} wall={wall} op={op} plan={plan} />
-      ))}
+      {!low &&
+        openings.map((op) => (
+          <OpeningMesh key={op.id} wall={wall} op={op} plan={plan} />
+        ))}
     </group>
   )
 }
@@ -98,17 +104,60 @@ function OpeningMesh({ wall, op, plan }: { wall: Wall; op: Opening; plan: boolea
   )
 }
 
+/**
+ * Muri da abbassare in modalità "ritagliata": quelli tra la camera e il centro della stanza,
+ * cioè quando la camera sta dal lato del muro opposto al centro (come in The Sims).
+ */
+function useCutawayWalls(walls: Wall[], active: boolean): Set<string> {
+  const [cut, setCut] = useState<Set<string>>(new Set())
+  const key = useRef('')
+  const center = useMemo<Vec2>(() => {
+    const xs = walls.flatMap((w) => [w.a[0], w.b[0]])
+    const zs = walls.flatMap((w) => [w.a[1], w.b[1]])
+    return xs.length ? [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...zs) + Math.max(...zs)) / 2] : [0, 0]
+  }, [walls])
+
+  useFrame(({ camera }) => {
+    if (!active) {
+      if (key.current !== '') {
+        key.current = ''
+        setCut(new Set())
+      }
+      return
+    }
+    const ids: string[] = []
+    for (const w of walls) {
+      const { dir } = wallFrame(w)
+      const mid: Vec2 = [(w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2]
+      // normale del muro orientata verso il centro della stanza
+      let n: Vec2 = [-dir[1], dir[0]]
+      if ((center[0] - mid[0]) * n[0] + (center[1] - mid[1]) * n[1] < 0) n = [-n[0], -n[1]]
+      if ((camera.position.x - mid[0]) * n[0] + (camera.position.z - mid[1]) * n[1] < 0) ids.push(w.id)
+    }
+    const k = ids.join(',')
+    // si aggiorna lo stato solo quando cambia l'insieme, non a ogni fotogramma
+    if (k !== key.current) {
+      key.current = k
+      setCut(new Set(ids))
+    }
+  })
+  return cut
+}
+
 export function Walls() {
   const walls = useProject((s) => s.project.walls)
   const openings = useProject((s) => s.project.openings)
   const selection = useUi((s) => s.selection)
   const plan = useUi((s) => s.view === '2d')
+  const wallMode = useUi((s) => s.wallMode)
+  const cut = useCutawayWalls(walls, !plan && wallMode === 'cutaway')
   return (
     <>
       {walls.map((w) => (
         <WallMesh
           key={w.id}
           plan={plan}
+          low={!plan && (wallMode === 'down' || cut.has(w.id))}
           wall={w}
           openings={openings.filter((o) => o.wallId === w.id)}
           selected={selection?.type === 'wall' && selection.id === w.id}

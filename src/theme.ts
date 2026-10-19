@@ -59,6 +59,8 @@ export interface SceneTheme {
   spaceFillOpacity: number
   wallPlan: string
   wall3d: string
+  /** muri abbassati della vista ritagliata */
+  wallCut: string
   selected: string
   collision: string
   edge: string
@@ -79,6 +81,7 @@ export const SCENE_THEMES: Record<ResolvedTheme, SceneTheme> = {
     spaceFillOpacity: 0.04,
     wallPlan: '#3b4233',
     wall3d: '#e4e6df',
+    wallCut: '#aab19d',
     selected: '#ff9d00',
     collision: '#d6423f',
     edge: '#3b4233',
@@ -97,6 +100,7 @@ export const SCENE_THEMES: Record<ResolvedTheme, SceneTheme> = {
     spaceFillOpacity: 0.04,
     wallPlan: '#c9cfbf',
     wall3d: '#8d9286',
+    wallCut: '#5b6253',
     selected: '#ff9d00',
     collision: '#ff6b66',
     edge: '#c9cfbf',

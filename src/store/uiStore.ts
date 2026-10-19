@@ -4,6 +4,8 @@ import type { Vec2 } from '../model/schema'
 export type Tool = 'select' | 'wall' | 'door' | 'window'
 export type ViewMode = '2d' | '3d'
 /** manipolatore stile Unity: Q nessuno, W sposta, E ruota, R scala */
+/** muri in 3D: alti, ritagliati verso la camera (The Sims), tutti bassi */
+export type WallMode = 'up' | 'cutaway' | 'down'
 export type GizmoMode = 'none' | 'translate' | 'rotate' | 'scale'
 const COLLISIONS_KEY = 'banana33:showCollisions'
 
@@ -25,6 +27,7 @@ interface UiState {
   tool: Tool
   view: ViewMode
   gizmo: GizmoMode
+  wallMode: WallMode
   selection: Selection
   /** passo di aggancio alla griglia in metri */
   snap: number
@@ -41,6 +44,8 @@ interface UiState {
   setTool: (t: Tool) => void
   setView: (v: ViewMode) => void
   setGizmo: (g: GizmoMode) => void
+  setWallMode: (m: WallMode) => void
+  cycleWallMode: () => void
   setSelection: (s: Selection) => void
   setSnap: (s: number) => void
   setWallDraft: (p: Vec2 | null) => void
@@ -56,6 +61,7 @@ export const useUi = create<UiState>((set) => ({
   tool: 'select',
   view: '2d',
   gizmo: 'translate',
+  wallMode: 'cutaway',
   selection: null,
   snap: 0.05,
   wallDraft: null,
@@ -66,6 +72,8 @@ export const useUi = create<UiState>((set) => ({
   showCollisions: readShowCollisions(),
   setTool: (tool) => set({ tool, wallDraft: null }),
   setView: (view) => set({ view }),
+  setWallMode: (wallMode) => set({ wallMode }),
+  cycleWallMode: () => set((s) => ({ wallMode: s.wallMode === 'up' ? 'cutaway' : s.wallMode === 'cutaway' ? 'down' : 'up' })),
   setGizmo: (gizmo) => set({ gizmo, tool: 'select', wallDraft: null }),
   setSelection: (selection) => set({ selection }),
   setSnap: (snap) => set({ snap }),
