@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { produce, type Draft } from 'immer'
 import { nanoid } from 'nanoid'
 import type { Group, OpeningKind, Project, SceneObject, Unit, Vec2 } from '../model/schema'
-import { newObject, newProject, OPENING_DEFAULTS, WALL_DEFAULTS, type Preset } from '../model/factory'
+import { defaultSizeOf, newObject, newProject, OPENING_DEFAULTS, WALL_DEFAULTS, type Preset } from '../model/factory'
 import { autoLayout, layoutBounds, type LayoutResult } from '../geometry/autoLayout'
 import { useUi, type Selection } from './uiStore'
 import { aabbOf, objectFootprint } from '../geometry/footprint'
@@ -63,10 +63,28 @@ const mutate: ProjectState['mutate'] = (r, o) => useProject.getState().mutate(r,
 
 // ---------- azioni ----------
 
+/** Posizione di default: centro dello spazio (o dei muri), altrimenti l'origine */
+function defaultPosition(p: Project): Vec2 {
+  const b = layoutBounds(p)
+  return b ? [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2] : [0, 0]
+}
+
+export function resetObject(id: string, what: 'size' | 'position' | 'rotation') {
+  const p = useProject.getState().project
+  const o = p.objects.find((x) => x.id === id)
+  if (!o) return
+  const patch: Partial<SceneObject> =
+    what === 'size'
+      ? { size: defaultSizeOf(o) }
+      : what === 'position'
+        ? { position: defaultPosition(p), elevation: 0 }
+        : { rotation: 0, rotationX: 0, rotationZ: 0 }
+  updateObject(id, patch)
+}
+
 export function addObject(preset: Preset) {
   const p = useProject.getState().project
-  const b = layoutBounds(p)
-  const pos: Vec2 = b ? [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2] : [0, 0]
+  const pos = defaultPosition(p)
   const o = newObject(preset, pos)
   mutate((d) => {
     d.objects.push(o)

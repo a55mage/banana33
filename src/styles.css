@@ -953,3 +953,10 @@ button.link:hover:not(:disabled) {
 .heading-row h3 {
   margin: 0;
 }
+
+.heading-row > :first-child {
+  margin-right: auto;
+}
+.heading-row {
+  gap: 4px;
+}

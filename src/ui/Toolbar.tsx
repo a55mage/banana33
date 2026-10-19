@@ -1,5 +1,9 @@
 import { useRef } from 'react'
 import {
+  faArrowPointer,
+  faArrowsRotate,
+  faExpand,
+  faUpDownLeftRight,
   faCircleHalfStroke,
   faCrosshairs,
   faCube,
@@ -18,7 +22,7 @@ import {
   faUpload,
 } from '@fortawesome/free-solid-svg-icons'
 import { useProject, setUnit } from '../store/projectStore'
-import { useUi } from '../store/uiStore'
+import { useUi, type GizmoMode } from '../store/uiStore'
 import { downloadProject, FILE_EXT, readProjectFile } from '../persistence/file'
 import { newProject } from '../model/factory'
 import type { Unit } from '../model/schema'
@@ -27,6 +31,13 @@ import { useThemePref, type ThemePref } from '../theme'
 import { getT, LANG_LABELS, useLang, useT, type Lang } from '../i18n'
 import { Icon } from './Icon'
 import { Menu } from './Menu'
+
+const GIZMOS: { id: GizmoMode; icon: typeof faSun }[] = [
+  { id: 'none', icon: faArrowPointer },
+  { id: 'translate', icon: faUpDownLeftRight },
+  { id: 'rotate', icon: faArrowsRotate },
+  { id: 'scale', icon: faExpand },
+]
 
 const THEMES: Record<ThemePref, { icon: typeof faSun; next: ThemePref }> = {
   system: { icon: faCircleHalfStroke, next: 'light' },
@@ -70,6 +81,7 @@ export function Toolbar() {
   const view = useUi((s) => s.view)
   const snap = useUi((s) => s.snap)
   const showCollisions = useUi((s) => s.showCollisions)
+  const gizmo = useUi((s) => s.gizmo)
   const unit = useUnit()
   const snaps = SNAP_STEPS[UNITS[unit].system]
   const { setTool, setView, setSnap } = useUi.getState()
@@ -173,6 +185,20 @@ export function Toolbar() {
           <button className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')} title="3D (3)">
             <Icon icon={faCube} /> 3D
           </button>
+        </div>
+        <div className="segmented" role="group" aria-label="Gizmo">
+          {GIZMOS.map((g) => (
+            <button
+              key={g.id}
+              className={`icon-btn${gizmo === g.id ? ' active' : ''}`}
+              aria-pressed={gizmo === g.id}
+              onClick={() => useUi.getState().setGizmo(g.id)}
+              title={t.toolbar.gizmo[g.id]}
+              aria-label={t.toolbar.gizmo[g.id]}
+            >
+              <Icon icon={g.icon} />
+            </button>
+          ))}
         </div>
         <button onClick={() => useUi.getState().requestFit()} title={t.toolbar.centerTitle}>
           <Icon icon={faCrosshairs} /> {t.toolbar.center}

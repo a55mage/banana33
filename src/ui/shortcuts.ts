@@ -68,13 +68,21 @@ export function handleShortcut(e: KeyboardEvent) {
       return run(() => scaleSelection(1 / 1.1))
   }
 
+  // rotazioni rapide: [ ] di 15°, con Shift di 90° (e.code non dipende dal layout di tastiera)
+  if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
+    const sign = e.code === 'BracketLeft' ? -1 : 1
+    return run(() => rotateSelection(sign * (e.shiftKey ? 90 : 15)))
+  }
+
   switch (k) {
-    case 'r':
-      return rotateSelection(90)
     case 'q':
-      return rotateSelection(-15)
+      return ui.setGizmo('none')
+    case 'w':
+      return ui.setGizmo('translate')
     case 'e':
-      return rotateSelection(15)
+      return ui.setGizmo('rotate')
+    case 'r':
+      return ui.setGizmo('scale')
     case 'c':
       return ui.requestFit()
     case 'k':

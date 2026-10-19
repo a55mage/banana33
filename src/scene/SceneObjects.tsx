@@ -10,6 +10,7 @@ import { findCollisions } from '../geometry/collision'
 import { deg2rad } from '../geometry/vec'
 import { objectExtents } from '../geometry/footprint'
 import { bananaGeometry } from './bananaGeometry'
+import { gizmoBusy } from './Gizmo'
 import { useSceneTheme } from '../theme'
 
 const noRaycast = () => null
@@ -61,6 +62,8 @@ function ObjectMesh({ o, colliding, selected, showLabel }: { o: SceneObject; col
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     const ui = useUi.getState()
     if (ui.tool !== 'select' || e.button !== 0) return
+    // le maniglie del manipolatore hanno la precedenza sull'oggetto che sta sotto
+    if (gizmoBusy()) return
     e.stopPropagation()
     const native = e.nativeEvent
     if (native.ctrlKey || native.metaKey || native.shiftKey) {

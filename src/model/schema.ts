@@ -18,6 +18,8 @@ export const SceneObjectSchema = z.object({
   rotationZ: z.number().default(0),
   /** larghezza (X), altezza (Y), profondità (Z) */
   size: z.tuple([z.number().positive(), z.number().positive(), z.number().positive()]),
+  /** dimensioni con cui l'oggetto è stato creato (per il reset); null nei progetti più vecchi */
+  defaultSize: z.tuple([z.number().positive(), z.number().positive(), z.number().positive()]).nullable().default(null),
   /** proporzioni bloccate: cambiando una dimensione si scalano anche le altre */
   scaleLock: z.boolean().default(false),
   color: z.string(),

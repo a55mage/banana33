@@ -29,6 +29,7 @@ const it = {
     themeTitle: (label: string) => `Tema: ${label} (clic per cambiare)`,
     language: 'Lingua',
     help: 'Scorciatoie da tastiera (?)',
+    gizmo: { none: 'Nessun manipolatore (Q)', translate: 'Sposta (W)', rotate: 'Ruota (E)', scale: 'Scala (R)' },
   },
   sidebar: {
     space: 'Spazio contenitore',
@@ -125,6 +126,9 @@ const it = {
     lock: 'Blocca',
     scaleLock: 'Blocca le proporzioni: cambiando una dimensione si scalano anche le altre',
     scaleUnlock: 'Sblocca le proporzioni',
+    resetSize: 'Ripristina le dimensioni originali',
+    resetPosition: 'Riporta al centro dello spazio, a quota 0',
+    resetRotation: 'Azzera le rotazioni',
     unlock: 'Sblocca',
     selectHint: 'Ctrl o Shift + clic per selezionare più oggetti, poi Raggruppa (Ctrl+G). Trascina gli oggetti per riordinarli o spostarli nei gruppi.',
     tiltHint: 'Con le rotazioni X e Z il punto più basso resta appoggiato alla quota.',
@@ -144,8 +148,8 @@ const it = {
         group: 'Oggetto selezionato',
         items: [
           ['Canc / ⌫', 'Elimina'],
-          ['R', 'Ruota di 90°'],
-          ['Q / E', 'Ruota di −15° / +15°'],
+          ['[ / ]', 'Ruota di −15° / +15°'],
+          ['Shift + [ / Shift + ]', 'Ruota di −90° / +90°'],
           ['+ / −', 'Scala del 10% (tutte le dimensioni)'],
           ['Frecce', 'Sposta di un passo di snap'],
           ['Shift + frecce', 'Sposta di 10 passi'],
@@ -160,6 +164,15 @@ const it = {
           ['Ctrl + A', 'Seleziona tutti gli oggetti'],
           ['Ctrl + G', 'Raggruppa gli oggetti selezionati'],
           ['Ctrl + Shift + G', 'Separa il gruppo selezionato'],
+        ],
+      },
+      {
+        group: 'Manipolatore (come Unity)',
+        items: [
+          ['Q', 'Nessun manipolatore'],
+          ['W', 'Sposta'],
+          ['E', 'Ruota (Shift: a scatti di 15°)'],
+          ['R', 'Scala (maniglia centrale: uniforme)'],
         ],
       },
       {
@@ -275,6 +288,7 @@ const en: Dict = {
     themeTitle: (label) => `Theme: ${label} (click to change)`,
     language: 'Language',
     help: 'Keyboard shortcuts (?)',
+    gizmo: { none: 'No gizmo (Q)', translate: 'Move (W)', rotate: 'Rotate (E)', scale: 'Scale (R)' },
   },
   sidebar: {
     space: 'Container space',
@@ -371,6 +385,9 @@ const en: Dict = {
     lock: 'Lock',
     scaleLock: 'Lock proportions: changing one dimension scales the others too',
     scaleUnlock: 'Unlock proportions',
+    resetSize: 'Restore the original dimensions',
+    resetPosition: 'Move back to the center of the space, at elevation 0',
+    resetRotation: 'Reset rotations',
     unlock: 'Unlock',
     selectHint: 'Ctrl or Shift + click to select several objects, then Group (Ctrl+G). Drag objects to reorder them or move them into groups.',
     tiltHint: 'With X and Z rotations the lowest point stays at the elevation.',
@@ -390,8 +407,8 @@ const en: Dict = {
         group: 'Selected object',
         items: [
           ['Del / ⌫', 'Delete'],
-          ['R', 'Rotate 90°'],
-          ['Q / E', 'Rotate −15° / +15°'],
+          ['[ / ]', 'Rotate −15° / +15°'],
+          ['Shift + [ / Shift + ]', 'Rotate −90° / +90°'],
           ['+ / −', 'Scale by 10% (all dimensions)'],
           ['Arrows', 'Move by one snap step'],
           ['Shift + arrows', 'Move by 10 steps'],
@@ -406,6 +423,15 @@ const en: Dict = {
           ['Ctrl + A', 'Select all objects'],
           ['Ctrl + G', 'Group the selected objects'],
           ['Ctrl + Shift + G', 'Ungroup the selected group'],
+        ],
+      },
+      {
+        group: 'Gizmo (Unity-style)',
+        items: [
+          ['Q', 'No gizmo'],
+          ['W', 'Move'],
+          ['E', 'Rotate (Shift: 15° steps)'],
+          ['R', 'Scale (center handle: uniform)'],
         ],
       },
       {

@@ -1,4 +1,5 @@
 import {
+  faClockRotateLeft,
   faClone,
   faDownLeftAndUpRightToCenter,
   faLayerGroup,
@@ -28,6 +29,7 @@ import {
   moveSelectionTo,
   setSelectionLocked,
   selectedObjectIds,
+  resetObject,
 } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
 import type { Group, Opening, SceneObject, Wall } from '../model/schema'
@@ -44,10 +46,10 @@ function SelectionActions({ locked }: { locked: boolean }) {
   const t = useT()
   return (
     <div className="actions">
-      <button className="icon-btn" onClick={() => rotateSelection(-90)} title={`${t.props.rotateLeft}`} aria-label={t.props.rotateLeft}>
+      <button className="icon-btn" onClick={() => rotateSelection(-90)} title={`${t.props.rotateLeft} (Shift+[)`} aria-label={t.props.rotateLeft}>
         <Icon icon={faRotateLeft} />
       </button>
-      <button className="icon-btn" onClick={() => rotateSelection(90)} title={`${t.props.rotateRight} (R)`} aria-label={t.props.rotateRight}>
+      <button className="icon-btn" onClick={() => rotateSelection(90)} title={`${t.props.rotateRight} (Shift+])`} aria-label={t.props.rotateRight}>
         <Icon icon={faRotateRight} />
       </button>
       <button className="icon-btn" onClick={() => scaleSelection(1.1)} title={t.props.scaleUp} aria-label={t.props.scaleUp}>
@@ -72,6 +74,14 @@ function SelectionActions({ locked }: { locked: boolean }) {
         <Icon icon={faTrashCan} /> {t.props.delete}
       </button>
     </div>
+  )
+}
+
+function ResetButton({ title, onClick }: { title: string; onClick: () => void }) {
+  return (
+    <button className="icon-btn small" onClick={onClick} title={title} aria-label={title}>
+      <Icon icon={faClockRotateLeft} />
+    </button>
   )
 }
 
@@ -137,19 +147,26 @@ function ObjectProps({ o, group }: { o: SceneObject; group: Group | undefined })
         >
           <Icon icon={o.scaleLock ? faLink : faLinkSlash} />
         </button>
+        <ResetButton title={t.props.resetSize} onClick={() => resetObject(o.id, 'size')} />
       </div>
       <div className="fields">
         <NumField label={t.props.width} value={o.size[0]} min={0.01} onCommit={(v) => setSize(0, v)} />
         <NumField label={t.props.depth} value={o.size[2]} min={0.01} onCommit={(v) => setSize(2, v)} />
         <NumField label={t.props.height} value={o.size[1]} min={0.01} onCommit={(v) => setSize(1, v)} />
       </div>
-      <h4>{t.props.position}</h4>
+      <div className="heading-row">
+        <h4>{t.props.position}</h4>
+        <ResetButton title={t.props.resetPosition} onClick={() => resetObject(o.id, 'position')} />
+      </div>
       <div className="fields">
         <NumField label={t.props.x} value={o.position[0]} onCommit={(v) => set({ position: [v, o.position[1]] })} />
         <NumField label={t.props.y} value={o.position[1]} onCommit={(v) => set({ position: [o.position[0], v] })} />
         <NumField label={t.props.elevation} value={o.elevation} min={0} onCommit={(v) => set({ elevation: v })} />
       </div>
-      <h4>{t.props.rotation}</h4>
+      <div className="heading-row">
+        <h4>{t.props.rotation}</h4>
+        <ResetButton title={t.props.resetRotation} onClick={() => resetObject(o.id, 'rotation')} />
+      </div>
       <div className="fields three">
         <NumField label="X" value={o.rotationX} kind="angle" onCommit={(v) => set({ rotationX: normDeg(v) })} />
         <NumField label="Y" value={o.rotation} kind="angle" onCommit={(v) => set({ rotation: normDeg(v) })} />

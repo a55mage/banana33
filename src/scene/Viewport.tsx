@@ -10,6 +10,7 @@ import { dist, snapValue } from '../geometry/vec'
 import { SceneObjects } from './SceneObjects'
 import { Walls, WallDraft } from './Walls'
 import { SpaceBox } from './SpaceBox'
+import { Gizmo, gizmoBusy } from './Gizmo'
 import { GRID, UNITS, useUnit } from '../units'
 import { useSceneTheme } from '../theme'
 
@@ -120,7 +121,7 @@ function Ground() {
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     const ui = useUi.getState()
-    if (e.delta > 4) return // era un pan/orbit, non un click
+    if (e.delta > 4 || gizmoBusy()) return // era un pan/orbit o un uso del manipolatore, non un click
     if (ui.tool === 'wall') {
       const p = snapPoint([e.point.x, e.point.z], ui.wallDraft, e.nativeEvent.shiftKey)
       if (!ui.wallDraft) ui.setWallDraft(p)
@@ -185,6 +186,7 @@ export function Viewport() {
       <Walls />
       <WallDraft />
       <SceneObjects />
+      <Gizmo />
     </Canvas>
   )
 }

@@ -133,6 +133,14 @@ export const FURNITURE: PresetGroup[] = [
   },
 ]
 
+/** Dimensioni originali di un oggetto: quelle salvate, altrimenti quelle del preset corrispondente */
+export function defaultSizeOf(o: SceneObject): SceneObject['size'] {
+  if (o.defaultSize) return [...o.defaultSize]
+  const all = [...PRIMITIVES, ...FURNITURE.flatMap((g) => g.presets)]
+  const preset = o.model ? all.find((p) => p.model === o.model) : PRIMITIVES.find((p) => p.kind === o.kind)
+  return [...(preset ?? PRIMITIVES[0]).size]
+}
+
 export function newObject(preset: Preset, position: [number, number]): SceneObject {
   const name = getT().presets[preset.id]
   return {
@@ -145,6 +153,7 @@ export function newObject(preset: Preset, position: [number, number]): SceneObje
     rotationX: 0,
     rotationZ: 0,
     size: [...preset.size],
+    defaultSize: [...preset.size],
     scaleLock: false,
     color: preset.color,
     locked: false,

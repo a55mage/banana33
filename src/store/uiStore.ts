@@ -3,6 +3,8 @@ import type { Vec2 } from '../model/schema'
 
 export type Tool = 'select' | 'wall' | 'door' | 'window'
 export type ViewMode = '2d' | '3d'
+/** manipolatore stile Unity: Q nessuno, W sposta, E ruota, R scala */
+export type GizmoMode = 'none' | 'translate' | 'rotate' | 'scale'
 const COLLISIONS_KEY = 'banana33:showCollisions'
 
 function readShowCollisions() {
@@ -22,6 +24,7 @@ export type Selection =
 interface UiState {
   tool: Tool
   view: ViewMode
+  gizmo: GizmoMode
   selection: Selection
   /** passo di aggancio alla griglia in metri */
   snap: number
@@ -37,6 +40,7 @@ interface UiState {
   showCollisions: boolean
   setTool: (t: Tool) => void
   setView: (v: ViewMode) => void
+  setGizmo: (g: GizmoMode) => void
   setSelection: (s: Selection) => void
   setSnap: (s: number) => void
   setWallDraft: (p: Vec2 | null) => void
@@ -51,6 +55,7 @@ interface UiState {
 export const useUi = create<UiState>((set) => ({
   tool: 'select',
   view: '2d',
+  gizmo: 'translate',
   selection: null,
   snap: 0.05,
   wallDraft: null,
@@ -61,6 +66,7 @@ export const useUi = create<UiState>((set) => ({
   showCollisions: readShowCollisions(),
   setTool: (tool) => set({ tool, wallDraft: null }),
   setView: (view) => set({ view }),
+  setGizmo: (gizmo) => set({ gizmo, tool: 'select', wallDraft: null }),
   setSelection: (selection) => set({ selection }),
   setSnap: (snap) => set({ snap }),
   setWallDraft: (wallDraft) => set({ wallDraft }),
