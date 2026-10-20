@@ -149,7 +149,7 @@ function ObjectProps({ o, group }: { o: SceneObject; group: Group | undefined })
         </button>
         <ResetButton title={t.props.resetSize} onClick={() => resetObject(o.id, 'size')} />
       </div>
-      <div className="fields">
+      <div className="fields three">
         <NumField label={t.props.width} value={o.size[0]} min={0.01} onCommit={(v) => setSize(0, v)} />
         <NumField label={t.props.depth} value={o.size[2]} min={0.01} onCommit={(v) => setSize(2, v)} />
         <NumField label={t.props.height} value={o.size[1]} min={0.01} onCommit={(v) => setSize(1, v)} />
@@ -158,7 +158,7 @@ function ObjectProps({ o, group }: { o: SceneObject; group: Group | undefined })
         <h4>{t.props.position}</h4>
         <ResetButton title={t.props.resetPosition} onClick={() => resetObject(o.id, 'position')} />
       </div>
-      <div className="fields">
+      <div className="fields three">
         <NumField label={t.props.x} value={o.position[0]} onCommit={(v) => set({ position: [v, o.position[1]] })} />
         <NumField label={t.props.y} value={o.position[1]} onCommit={(v) => set({ position: [o.position[0], v] })} />
         <NumField label={t.props.elevation} value={o.elevation} min={0} onCommit={(v) => set({ elevation: v })} />
@@ -253,7 +253,7 @@ function WallProps({ w }: { w: Wall }) {
   const { length, dir } = wallFrame(w)
   return (
     <>
-      <div className="fields">
+      <div className="fields three">
         <NumField
           label={t.props.length}
           value={length}

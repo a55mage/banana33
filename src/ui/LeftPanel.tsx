@@ -35,7 +35,7 @@ function SpaceSection() {
         </label>
       </h3>
       {space && (
-        <div className="fields">
+        <div className="fields three">
           <NumField label={t.sidebar.width} value={space.width} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.width = v))} />
           <NumField label={t.sidebar.depth} value={space.depth} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.depth = v))} />
           <NumField label={t.sidebar.height} value={space.height} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.height = v))} />
