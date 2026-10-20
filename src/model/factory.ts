@@ -53,6 +53,12 @@ const f = (id: PresetId, model: string, size: [number, number, number], color: s
   kind,
 })
 
+/** Elementi strutturali 3D (scale) */
+export const BUILDING_PRESETS: Preset[] = [
+  f('stairs', 'stairs', [0.9, 2.7, 2.8], '#c9a77c'),
+  f('spiralStairs', 'spiralStairs', [1.6, 2.7, 1.6], '#c9a77c', 'cylinder'),
+]
+
 /** Arredo, suddiviso per ambiente */
 export const FURNITURE: PresetGroup[] = [
   {
@@ -104,6 +110,10 @@ export const FURNITURE: PresetGroup[] = [
   {
     id: 'office',
     presets: [f('desk', 'desk', [1.4, 0.75, 0.7], '#d8c3a0'), f('officeChair', 'chair', [0.45, 0.9, 0.5], '#4a4f57')],
+  },
+  {
+    id: 'stairs',
+    presets: BUILDING_PRESETS,
   },
   {
     id: 'storage',

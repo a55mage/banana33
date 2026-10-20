@@ -31,7 +31,7 @@ function PartMesh({ part, main, colliding, selected }: { part: Part; main: strin
   // colori con alpha (#rrggbbaa) diventano trasparenti
   const opacity = part.opacity ?? (part.c.length === 9 ? parseInt(part.c.slice(7), 16) / 255 : 1)
   return (
-    <mesh position={part.p} scale={part.s} rotation={[part.rx ?? 0, part.ry ?? 0, part.rz ?? 0]} castShadow={opacity > 0.5} receiveShadow raycast={noRaycast}>
+    <mesh position={part.p} scale={part.s} rotation={[part.rx ?? 0, part.ry ?? 0, part.rz ?? 0, 'YXZ']} castShadow={opacity > 0.5} receiveShadow raycast={noRaycast}>
       {part.shape === 'box' && <boxGeometry />}
       {part.shape === 'cyl' && <cylinderGeometry args={[0.5 * (part.taper ?? 1), 0.5, 1, part.segments ?? 32]} />}
       {part.shape === 'sphere' && <sphereGeometry args={[0.5, 32, 16]} />}

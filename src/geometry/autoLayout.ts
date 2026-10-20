@@ -45,7 +45,7 @@ interface LayoutUnit {
 /** Modelli che hanno un retro da mettere contro il muro */
 const WALL_BACKED = new Set([
   'sofa', 'armchair', 'bed', 'wardrobe', 'dresser', 'bookshelf', 'tvStand', 'tv', 'nightstand',
-  'kitchen', 'fridge', 'washer', 'toilet', 'washbasin', 'desk', 'bench',
+  'kitchen', 'fridge', 'washer', 'toilet', 'washbasin', 'desk', 'bench', 'stairs',
 ])
 
 const TURNS = [0, 90, 180, 270]

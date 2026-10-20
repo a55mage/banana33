@@ -112,7 +112,35 @@ export function Toolbar() {
     <header className="toolbar">
       <div className="group">
         <strong className="brand">
-          <span className="brand-mark" aria-hidden="true" />
+          <svg className="brand-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="b33-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#23281e" />
+                <stop offset="100%" stopColor="#141811" />
+              </linearGradient>
+              <linearGradient id="b33-body" x1="6" y1="24" x2="25" y2="6" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#ff9d00" />
+                <stop offset="50%" stopColor="#ffd400" />
+                <stop offset="100%" stopColor="#f2e318" />
+              </linearGradient>
+              <linearGradient id="b33-light" x1="8" y1="21" x2="23" y2="8" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#ffd400" />
+                <stop offset="100%" stopColor="#fff36b" />
+              </linearGradient>
+            </defs>
+            <rect x="1" y="1" width="30" height="30" rx="7.5" fill="url(#b33-bg)" stroke="#749e35" strokeWidth="1.5" />
+            <path d="M21.5 6.2C23.8 5.2 26.2 6.1 26.8 8.2C24.5 9.1 22.3 8.3 21.5 6.2Z" fill="#8abc40" />
+            <path
+              d="M22.2 7.4C21.3 13.8 16.5 19.3 9.6 20.6C8.1 20.9 6.6 20.6 5.5 20.1C4.8 19.8 4.4 20.6 4.9 21.2C7.4 24.4 12.6 25.8 17.5 23.9C22.9 21.8 26.3 16.1 24.8 9.2C24.5 7.9 23.7 7.1 22.2 7.4Z"
+              fill="url(#b33-body)"
+            />
+            <path
+              d="M22.2 7.4C21.3 13.8 16.5 19.3 9.6 20.6C8.1 20.9 6.6 20.6 5.5 20.1C7.9 22.3 12.2 22.7 16.2 20.8C20.5 18.7 23.4 13.8 23.5 8.1C23.1 7.6 22.7 7.3 22.2 7.4Z"
+              fill="url(#b33-light)"
+            />
+            <path d="M21.8 5.4L24.2 6.8L23.4 8.5L21.3 7.5Z" fill="#749e35" />
+            <circle cx="5.2" cy="20.5" r="1.1" fill="#5c4028" />
+          </svg>
           banana33
         </strong>
         <input

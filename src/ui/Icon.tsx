@@ -1,12 +1,14 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import {
+  faArrowsSpin,
   faBath,
   faCat,
   faDog,
   faDove,
   faFire,
   faLeaf,
+  faStairs,
   faTent,
   faTree,
   faUmbrellaBeach,
@@ -50,6 +52,8 @@ export const PRESET_ICONS: Record<PresetId, IconSource> = {
   cube: faCube,
   cylinder: faDatabase,
   sphere: '⚪',
+  stairs: faStairs,
+  spiralStairs: faArrowsSpin,
   sofa3: faCouch,
   sofa2: faCouch,
   armchair: '💺',

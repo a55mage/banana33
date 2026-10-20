@@ -535,6 +535,178 @@ const B: Record<string, Builder> = {
   },
 
   banana: (w, h, d) => [{ shape: 'banana', p: [0, h / 2, 0], s: [w, h, d], c: 'main' }],
+
+  // ------------------------------------------------------------- scale
+
+  stairs: (w, h, d) => {
+    const railH = Math.min(0.45, h * 0.18)
+    const topY = Math.max(0.2, h - railH)
+    const n = Math.max(5, Math.min(15, Math.round(topY / 0.17)))
+    const landingD = Math.min(d * 0.18, Math.max(0.24, d / (n + 1)))
+    const flightD = Math.max(0.2, d - landingD)
+    const rise = topY / n
+    const tread = flightD / n
+    const treadT = Math.min(0.032, rise * 0.35)
+    const strW = Math.min(0.04, w * 0.06)
+    const innerW = Math.max(0.1, w - 2 * strW)
+    const parts: Part[] = []
+
+    // cosciali laterali inclinati lungo la rampa (+d/2 in basso -> -d/2 + landingD in alto)
+    const slopeLen = Math.hypot(flightD, topY) * 0.97
+    const slopeAngle = Math.atan2(topY, flightD)
+    const beamH = Math.min(0.14, rise * 1.05)
+    const zMid = -d / 2 + landingD + flightD / 2
+    const yMid = Math.max(beamH / 2, topY / 2 - treadT)
+    for (const sx of [-w / 2 + strW / 2, w / 2 - strW / 2]) {
+      parts.push({
+        shape: 'box',
+        p: [sx, yMid, zMid],
+        s: [strW, beamH, slopeLen],
+        c: 'dark',
+        rx: slopeAngle,
+      })
+    }
+
+    // gradini della rampa (da +d/2 verso -d/2 + landingD)
+    for (let i = 0; i < n; i++) {
+      const zFront = d / 2 - i * tread
+      const zBack = zFront - tread
+      const yTop = (i + 1) * rise
+      const yBot = i * rise
+      // alzata
+      parts.push(box(-innerW / 2, yBot, zFront - 0.02, innerW / 2, yTop - treadT, zFront, 'light'))
+      // pedata con leggero toro sporgente
+      parts.push(box(-innerW / 2, yTop - treadT, zBack, innerW / 2, yTop, Math.min(d / 2, zFront + 0.012), 'main'))
+      // linea di bordo anteriore (rende ogni gradino ben leggibile nella vista 2D dall'alto)
+      parts.push(box(-innerW / 2, yTop - 0.001, zFront - 0.008, innerW / 2, yTop + 0.001, zFront, LINE))
+
+      // montanti verticali del corrimano
+      if (i % 2 === 0 || i === n - 1) {
+        const zb = (zFront + zBack) / 2
+        const yPostTop = Math.min(h, yTop + railH - 0.02)
+        for (const rx of [-w / 2 + strW / 2, w / 2 - strW / 2]) {
+          parts.push(cyl(rx, yTop - treadT, zb, 0.02, yPostTop, 0.02, METAL))
+        }
+      }
+    }
+
+    // pianerottolo superiore in cima (-d/2 .. -d/2 + landingD)
+    const zLandFront = -d / 2 + landingD
+    parts.push(box(-w / 2, Math.max(0, topY - beamH * 0.8), -d / 2, w / 2, topY - treadT, zLandFront, 'dark'))
+    parts.push(box(-w / 2, topY - treadT, -d / 2, w / 2, topY, zLandFront, 'main'))
+    parts.push(box(-w / 2, topY - 0.001, zLandFront - 0.008, w / 2, topY + 0.001, zLandFront, LINE))
+
+    // montanti di partenza e arrivo + corrimano inclinato e tratto in piano
+    for (const rx of [-w / 2 + strW / 2, w / 2 - strW / 2]) {
+      parts.push(cyl(rx, 0, d / 2 - 0.03, 0.032, Math.min(h, rise + railH), 0.032, 'dark'))
+      parts.push(cyl(rx, topY, -d / 2 + 0.03, 0.032, h, 0.032, 'dark'))
+      parts.push({
+        shape: 'box',
+        p: [rx, Math.min(h - 0.02, topY / 2 + railH), zMid],
+        s: [0.036, 0.032, slopeLen],
+        c: 'dark',
+        rx: slopeAngle,
+      })
+      parts.push(box(rx - 0.018, h - 0.032, -d / 2 + 0.02, rx + 0.018, h, zLandFront + 0.02, 'dark'))
+    }
+
+    return parts
+  },
+
+  spiralStairs: (w, h, d) => {
+    const rxOuter = w / 2
+    const rzOuter = d / 2
+    const R = Math.min(rxOuter, rzOuter)
+    const railH = Math.min(0.45, h * 0.18)
+    const topY = Math.max(0.25, h - railH)
+    const poleD = Math.max(0.1, R * 0.22)
+    const rInner = poleD * 0.42
+    const rOuter = Math.max(rInner + 0.1, R - 0.03)
+    const rMid = (rInner + rOuter) / 2
+    const stepLen = rOuter - rInner
+    const n = Math.max(9, Math.min(16, Math.round(topY / 0.16)))
+    const totalAngle = Math.PI * 2.15
+    const treadT = Math.min(0.03, (topY / n) * 0.35)
+
+    const parts: Part[] = [
+      // anello di base a pavimento (evidenzia l'ingombro circolare anche in 2D) e piantana centrale
+      cyl(0, 0, 0, w * 0.98, 0.006, d * 0.98, 'dark', { opacity: 0.18 }),
+      cyl(0, 0, 0, poleD * 1.85, 0.025, poleD * 1.85, METAL),
+      cyl(0, 0, 0, poleD, h, poleD, METAL),
+      cyl(0, h - 0.025, 0, poleD * 1.35, h, poleD * 1.35, 'dark'),
+    ]
+
+    let prevRail: [number, number, number] | null = null
+
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1)
+      const theta = t * totalAngle
+      const y = ((i + 1) / n) * topY
+      const spread = 0.09
+
+      // boccola metallica sul palo centrale
+      parts.push(cyl(0, Math.max(0, y - treadT - 0.035), 0, poleD * 1.24, y + 0.003, poleD * 1.24, METAL))
+
+      // pedata a ventaglio: due tavole radiali svasate che si allargano verso l'esterno
+      for (const delta of [-spread, spread]) {
+        const a = theta + delta
+        const wBoard = Math.max(0.07, rOuter * 0.22)
+        parts.push({
+          shape: 'box',
+          p: [Math.sin(a) * rMid, y - treadT / 2, Math.cos(a) * rMid],
+          s: [wBoard, treadT, stepLen],
+          c: 'main',
+          ry: a,
+        })
+      }
+      // fascia esterna del gradino per chiudere il ventaglio
+      const rEdge = rOuter - 0.05
+      parts.push({
+        shape: 'box',
+        p: [Math.sin(theta) * rEdge, y - treadT / 2, Math.cos(theta) * rEdge],
+        s: [Math.max(0.12, rOuter * 0.42), treadT, 0.1],
+        c: 'main',
+        ry: theta,
+      })
+
+      // linea radiale sul bordo di salita (rende la raggiera ben visibile in pianta 2D)
+      const aFront = theta - spread * 1.35
+      parts.push({
+        shape: 'box',
+        p: [Math.sin(aFront) * rMid, y + 0.001, Math.cos(aFront) * rMid],
+        s: [0.008, 0.003, stepLen],
+        c: LINE,
+        ry: aFront,
+      })
+
+      // montante perimetrale e segmento di corrimano elicoidale
+      const rRail = rOuter - 0.015
+      const xRail = Math.sin(theta) * rRail
+      const zRail = Math.cos(theta) * rRail
+      const yRail = Math.min(h - 0.015, y + railH)
+      parts.push(cyl(xRail, y - treadT, zRail, 0.02, yRail, 0.02, METAL))
+
+      const curRail: [number, number, number] = [xRail, yRail, zRail]
+      if (prevRail) {
+        const dx = curRail[0] - prevRail[0]
+        const dy = curRail[1] - prevRail[1]
+        const dz = curRail[2] - prevRail[2]
+        const dxz = Math.hypot(dx, dz)
+        const segLen = Math.hypot(dxz, dy) + 0.015
+        parts.push({
+          shape: 'box',
+          p: [(prevRail[0] + curRail[0]) / 2, (prevRail[1] + curRail[1]) / 2, (prevRail[2] + curRail[2]) / 2],
+          s: [0.03, 0.028, segLen],
+          c: 'dark',
+          rx: -Math.atan2(dy, dxz),
+          ry: Math.atan2(dx, dz),
+        })
+      }
+      prevRail = curRail
+    }
+
+    return parts
+  },
 }
 
 export function buildModel(model: string, w: number, h: number, d: number): Part[] | null {

@@ -11,7 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useProject, addObject, runAutoLayout } from '../store/projectStore'
 import { useUi, type Tool } from '../store/uiStore'
-import { FURNITURE, PRIMITIVES, type Preset } from '../model/factory'
+import { BUILDING_PRESETS, FURNITURE, PRIMITIVES, type Preset } from '../model/factory'
 import { formatLength, useUnit } from '../units'
 import { deleteProject, listProjects, loadProject, type ProjectMeta } from '../persistence/db'
 import { useT } from '../i18n'
@@ -56,24 +56,27 @@ function BuildingTools() {
   const t = useT()
   const tool = useUi((s) => s.tool)
   return (
-    <div className="chips">
-      {BUILDING_TOOLS.map((b) => (
-        <button
-          key={b.id}
-          className={tool === b.id ? 'active' : ''}
-          aria-pressed={tool === b.id}
-          onClick={() => useUi.getState().setTool(tool === b.id ? 'select' : b.id)}
-          title={`${t.tools[b.id]} (${b.key})`}
-        >
-          <Icon icon={b.icon} /> {t.tools[b.id]}
-        </button>
-      ))}
-      {tool !== 'select' && (
-        <button onClick={() => useUi.getState().setTool('select')} title={t.tools.exit}>
-          <Icon icon={faArrowPointer} /> {t.tools.select}
-        </button>
-      )}
-    </div>
+    <>
+      <div className="chips">
+        {BUILDING_TOOLS.map((b) => (
+          <button
+            key={b.id}
+            className={tool === b.id ? 'active' : ''}
+            aria-pressed={tool === b.id}
+            onClick={() => useUi.getState().setTool(tool === b.id ? 'select' : b.id)}
+            title={`${t.tools[b.id]} (${b.key})`}
+          >
+            <Icon icon={b.icon} /> {t.tools[b.id]}
+          </button>
+        ))}
+        {tool !== 'select' && (
+          <button onClick={() => useUi.getState().setTool('select')} title={t.tools.exit}>
+            <Icon icon={faArrowPointer} /> {t.tools.select}
+          </button>
+        )}
+      </div>
+      <PresetButtons presets={BUILDING_PRESETS} />
+    </>
   )
 }
 
