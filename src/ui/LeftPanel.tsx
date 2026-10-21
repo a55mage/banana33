@@ -9,7 +9,7 @@ import {
   faWandMagicSparkles,
   faWindowMaximize,
 } from '@fortawesome/free-solid-svg-icons'
-import { useProject, addObject, runAutoLayout } from '../store/projectStore'
+import { useProject, addObject, addSculptObject, runAutoLayout } from '../store/projectStore'
 import { useUi, type Tool } from '../store/uiStore'
 import { BUILDING_PRESETS, FURNITURE, PRIMITIVES, type Preset } from '../model/factory'
 import { formatLength, useUnit } from '../units'
@@ -87,6 +87,42 @@ function PresetButtons({ presets }: { presets: Preset[] }) {
   )
 }
 
+/** I progetti "Modello 3D" salvati nel browser, da aggiungere come oggetti */
+function CustomModels() {
+  const t = useT()
+  const [models, setModels] = useState<ProjectMeta[] | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    void listProjects().then((all) => alive && setModels(all.filter((m) => m.kind === 'model')))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const add = async (m: ProjectMeta) => {
+    const p = await loadProject(m.id)
+    // l'oggetto prende una copia del modello: le modifiche successive al progetto non lo cambiano
+    setMessage(p?.sculpt && addSculptObject(p.sculpt, p.name) ? null : t.sidebar.emptyModel)
+  }
+
+  return (
+    <details className="subgroup" open>
+      <summary>{t.groups.custom}</summary>
+      {models && models.length === 0 && <p className="hint">{t.sidebar.noCustomModels}</p>}
+      <div className="chips">
+        {models?.map((m) => (
+          <button key={m.id} onClick={() => void add(m)}>
+            <Icon icon={KIND_ICONS.model} /> {m.name}
+          </button>
+        ))}
+      </div>
+      {message && <p className="hint warn">{message}</p>}
+    </details>
+  )
+}
+
 type AddTab = 'building' | 'primitives' | 'furniture'
 const ADD_TABS: { id: AddTab; icon: IconSource }[] = [
   { id: 'building', icon: faTrowelBricks },
@@ -122,6 +158,7 @@ function AddSection() {
       <div className="tabpanel" role="tabpanel" id="add-tabpanel" aria-labelledby={`add-tab-${tab}`}>
         {tab === 'building' && <BuildingTools />}
         {tab === 'primitives' && <PresetButtons presets={PRIMITIVES} />}
+        {tab === 'furniture' && <CustomModels />}
         {tab === 'furniture' &&
           FURNITURE.map((g) => (
             <details key={g.id} className="subgroup" open={g.id === 'living'}>

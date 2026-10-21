@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { produce, type Draft } from 'immer'
 import { nanoid } from 'nanoid'
 import type { Group, OpeningKind, Project, SceneObject, Unit, Vec2 } from '../model/schema'
-import { defaultSizeOf, newObject, newProject, OPENING_DEFAULTS, WALL_DEFAULTS, type Preset } from '../model/factory'
+import { defaultSizeOf, newObject, newProject, objectFromSculpt, OPENING_DEFAULTS, WALL_DEFAULTS, type Preset } from '../model/factory'
+import type { SculptDoc } from '../model/sculpt'
 import { autoLayout, layoutBounds, type LayoutResult } from '../geometry/autoLayout'
 import { useUi, type Selection } from './uiStore'
 import { aabbOf, objectFootprint } from '../geometry/footprint'
@@ -95,6 +96,17 @@ export function addObject(preset: Preset) {
     d.objects.push(o)
   })
   useUi.getState().setSelection({ type: 'object', id: o.id })
+}
+
+/** Aggiunge allo spazio o alla planimetria un oggetto fatto con un modello 3D */
+export function addSculptObject(doc: SculptDoc, name: string): boolean {
+  const o = objectFromSculpt(doc, name, defaultPosition(useProject.getState().project))
+  if (!o) return false
+  mutate((d) => {
+    d.objects.push(o)
+  })
+  useUi.getState().setSelection({ type: 'object', id: o.id })
+  return true
 }
 
 export function updateObject(id: string, patch: Partial<SceneObject>, history = true) {

@@ -205,6 +205,7 @@ function SettingsSection({ doc }: { doc: SculptDoc }) {
         <input type="checkbox" checked={showCutters} onChange={(e) => useUi.getState().setShowCutters(e.target.checked)} />
         {t.sculpt.showCutters}
       </label>
+      <p className="hint">{t.sculpt.catalogHint}</p>
     </section>
   )
 }

@@ -3,6 +3,8 @@ import { Edges, Html } from '@react-three/drei'
 import { useThree, type ThreeEvent } from '@react-three/fiber'
 import { Color } from 'three'
 import type { SceneObject } from '../model/schema'
+import type { SculptDoc } from '../model/sculpt'
+import { useSculptGeometry } from './sculptGeometry'
 import { buildModel, type Part, type PartColor } from '../model/furniture'
 import { useProject, selectObject, selectedObjectIds } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
@@ -49,6 +51,40 @@ function PartMesh({ part, main, colliding, selected }: { part: Part; main: strin
   )
 }
 
+/**
+ * Oggetto fatto con un modello 3D: la mesh (calcolata in un worker) viene adattata alle dimensioni
+ * dell'oggetto, con la base appoggiata a y = 0 come le altre parti. Finché non è pronta si vede
+ * un parallelepipedo semitrasparente.
+ */
+function SculptObjectMesh({ doc, size, colliding, selected }: { doc: SculptDoc; size: SceneObject['size']; colliding: boolean; selected: boolean }) {
+  const theme = useSceneTheme()
+  const g = useSculptGeometry(doc)
+  if (!g) {
+    return (
+      <mesh position={[0, size[1] / 2, 0]} scale={size} raycast={noRaycast}>
+        <boxGeometry />
+        <meshStandardMaterial color={theme.edge} transparent opacity={0.15} />
+      </mesh>
+    )
+  }
+  const { min, max } = g.bounds
+  const scale: [number, number, number] = [0, 1, 2].map((i) => size[i] / Math.max(max[i] - min[i], 1e-6)) as [number, number, number]
+  return (
+    <group scale={scale}>
+      <mesh geometry={g.geometry} position={[-(min[0] + max[0]) / 2, -min[1], -(min[2] + max[2]) / 2]} castShadow receiveShadow raycast={noRaycast}>
+        <meshStandardMaterial
+          vertexColors
+          // il colore del materiale moltiplica quelli della mesh: rosso in collisione
+          color={colliding ? theme.collision : '#ffffff'}
+          emissive={selected ? theme.selected : '#000000'}
+          emissiveIntensity={selected ? 0.1 : 0}
+          roughness={0.5}
+        />
+      </mesh>
+    </group>
+  )
+}
+
 function ObjectMesh({ o, colliding, selected, showLabel }: { o: SceneObject; colliding: boolean; selected: boolean; showLabel: boolean }) {
   const [w, h, d] = o.size
   const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | null
@@ -84,7 +120,7 @@ function ObjectMesh({ o, colliding, selected, showLabel }: { o: SceneObject; col
   }
 
   const theme = useSceneTheme()
-  const isPlainBox = !o.model && o.kind === 'box'
+  const isPlainBox = !o.model && !o.sculpt && o.kind === 'box'
   const edgeColor = selected ? theme.selected : colliding ? theme.collision : isPlainBox ? theme.edge : null
 
   // il parallelepipedo ruota attorno al suo centro (ordine YXZ: inclinazioni locali, poi orientamento)
@@ -94,9 +130,11 @@ function ObjectMesh({ o, colliding, selected, showLabel }: { o: SceneObject; col
     <group position={[o.position[0], o.elevation, o.position[1]]}>
       <group position={[0, centerY, 0]} rotation={[deg2rad(o.rotationX), deg2rad(o.rotation), deg2rad(o.rotationZ), 'YXZ']}>
         <group position={[0, -h / 2, 0]}>
-          {parts.map((p, i) => (
-            <PartMesh key={i} part={p} main={o.color} colliding={colliding} selected={selected} />
-          ))}
+          {o.sculpt ? (
+            <SculptObjectMesh doc={o.sculpt} size={o.size} colliding={colliding} selected={selected} />
+          ) : (
+            parts.map((p, i) => <PartMesh key={i} part={p} main={o.color} colliding={colliding} selected={selected} />)
+          )}
           {/* ingombro: riceve i click e mostra il contorno usato per le collisioni */}
           <mesh
             position={[0, h / 2, 0]}

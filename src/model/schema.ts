@@ -30,6 +30,11 @@ export const SceneObjectSchema = z.object({
   rotationLock: z.boolean().default(false),
   /** modello 3D di arredo (vedi model/furniture.ts); null = primitiva semplice */
   model: z.string().nullable().default(null),
+  /**
+   * modello 3D personalizzato (copia di un progetto "Modello 3D"): la mesh si ricava dalle forme
+   * e si adatta a `size`; ha la precedenza su `model` e `kind`
+   */
+  sculpt: SculptDocSchema.nullable().default(null),
   /** gruppo di appartenenza (gli oggetti di un gruppo si selezionano e muovono insieme) */
   groupId: z.string().nullable().default(null),
 })

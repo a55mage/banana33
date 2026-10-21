@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid'
 import type { OpeningKind, PrimitiveKind, Project, SceneObject, ProjectKind } from './schema'
 import { getT, type Dict } from '../i18n'
 import { newSculptNode, SculptDocSchema, type SculptDoc } from './sculpt'
+import { compileSculpt } from '../sculpt/compile'
 
 export type ProjectTemplate = ProjectKind
 
@@ -198,6 +199,7 @@ export function newObject(preset: Preset, position: [number, number]): SceneObje
     locked: false,
     rotationLock: false,
     model: preset.model ?? null,
+    sculpt: null,
     groupId: null,
   }
 }
@@ -251,6 +253,22 @@ export function sampleProject(): Project {
     giant(placed('banana', [2.6, 3.3], 10), 1.8),
   ]
   return p
+}
+
+/**
+ * Oggetto che usa un modello 3D: le dimensioni sono quelle del suo ingombro (quindi collisioni
+ * e disposizione automatica funzionano come per gli altri oggetti). Null se il modello è vuoto.
+ */
+export function objectFromSculpt(doc: SculptDoc, name: string, position: [number, number]): SceneObject | null {
+  const b = compileSculpt(doc).bounds
+  if (!b) return null
+  const size: SceneObject['size'] = [0, 1, 2].map((i) => Math.max(0.001, Math.round((b.max[i] - b.min[i]) * 1000) / 1000)) as SceneObject['size']
+  return {
+    ...newObject({ id: 'cube', kind: 'box', size, color: '#ffffff' }, position),
+    name,
+    // copia indipendente: modificare il progetto del modello non cambia gli oggetti già piazzati
+    sculpt: structuredClone(doc),
+  }
 }
 
 export const OPENING_DEFAULTS: Record<OpeningKind, { width: number; height: number; sill: number }> = {

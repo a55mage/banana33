@@ -117,19 +117,23 @@ function ObjectProps({ o, group }: { o: SceneObject; group: Group | undefined })
         <input value={o.name} onChange={(e) => updateObject(o.id, { name: e.target.value }, false)} />
       </label>
       <div className="fields">
-        <label className="field">
-          <span>{t.props.color}</span>
-          <input type="color" value={o.color} onChange={(e) => set({ color: e.target.value })} />
-        </label>
+        {/* i modelli personalizzati hanno i colori delle loro forme */}
+        {!o.sculpt && (
+          <label className="field">
+            <span>{t.props.color}</span>
+            <input type="color" value={o.color} onChange={(e) => set({ color: e.target.value })} />
+          </label>
+        )}
         <label className="field">
           <span>{t.props.shape}</span>
           <select
-            value={o.model ? 'model' : o.kind}
+            value={o.sculpt ? 'sculpt' : o.model ? 'model' : o.kind}
             onChange={(e) => {
               const v = e.target.value
-              if (v !== 'model') set({ kind: v as SceneObject['kind'], model: null })
+              if (v !== 'model' && v !== 'sculpt') set({ kind: v as SceneObject['kind'], model: null, sculpt: null })
             }}
           >
+            {o.sculpt && <option value="sculpt">{t.props.customModel}</option>}
             {o.model && <option value="model">{t.props.model}</option>}
             <option value="box">{t.props.box}</option>
             <option value="cylinder">{t.props.cylinder}</option>
