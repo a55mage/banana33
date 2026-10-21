@@ -1,11 +1,12 @@
 import { del, get, getMany, keys, set } from 'idb-keyval'
-import { ProjectSchema, type Project } from '../model/schema'
+import { ProjectSchema, type Project, type ProjectKind } from '../model/schema'
 
 // I progetti sono salvati in IndexedDB (più capiente e robusto di localStorage).
 const PREFIX = 'project:'
 const LAST_KEY = 'banana33:lastProject'
 
 export interface ProjectMeta {
+  kind: ProjectKind
   id: string
   name: string
   updatedAt: number
@@ -16,7 +17,7 @@ export async function listProjects(): Promise<ProjectMeta[]> {
   const values = await getMany(ks)
   return values
     .map((v) => ProjectSchema.safeParse(v))
-    .flatMap((r) => (r.success ? [{ id: r.data.id, name: r.data.name, updatedAt: r.data.updatedAt }] : []))
+    .flatMap((r) => (r.success ? [{ kind: r.data.kind, id: r.data.id, name: r.data.name, updatedAt: r.data.updatedAt }] : []))
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
 

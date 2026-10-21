@@ -17,30 +17,22 @@ import { deleteProject, listProjects, loadProject, type ProjectMeta } from '../p
 import { useT } from '../i18n'
 import { NumField } from './NumField'
 import { Icon, PRESET_ICONS, type IconSource } from './Icon'
+import { KIND_ICONS } from './NewProjectDialog'
 
+/** Dimensioni del contenitore: presente solo (e sempre) nei progetti Spazio */
 function SpaceSection() {
   const t = useT()
   const space = useProject((s) => s.project.space)
   const mutate = useProject((s) => s.mutate)
+  if (!space) return null
   return (
     <section>
-      <h3>
-        <label className="inline">
-          <input
-            type="checkbox"
-            checked={space !== null}
-            onChange={(e) => mutate((d) => void (d.space = e.target.checked ? { width: 4, depth: 3, height: 2.7 } : null))}
-          />
-          {t.sidebar.space}
-        </label>
-      </h3>
-      {space && (
-        <div className="fields three">
-          <NumField label={t.sidebar.width} value={space.width} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.width = v))} />
-          <NumField label={t.sidebar.depth} value={space.depth} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.depth = v))} />
-          <NumField label={t.sidebar.height} value={space.height} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.height = v))} />
-        </div>
-      )}
+      <h3>{t.sidebar.space}</h3>
+      <div className="fields three">
+        <NumField label={t.sidebar.width} value={space.width} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.width = v))} />
+        <NumField label={t.sidebar.depth} value={space.depth} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.depth = v))} />
+        <NumField label={t.sidebar.height} value={space.height} min={0.1} onCommit={(v) => mutate((d) => void (d.space!.height = v))} />
+      </div>
     </section>
   )
 }
@@ -103,13 +95,16 @@ const ADD_TABS: { id: AddTab; icon: IconSource }[] = [
 
 function AddSection() {
   const t = useT()
+  const kind = useProject((s) => s.project.kind)
+  // muri, porte, finestre e scale esistono solo nelle planimetrie
+  const tabs = ADD_TABS.filter((x) => x.id !== 'building' || kind === 'plan')
   // le planimetrie partono dalla scheda Edificio, gli spazi dall'arredo
-  const [tab, setTab] = useState<AddTab>(() => (useProject.getState().project.space ? 'furniture' : 'building'))
+  const [tab, setTab] = useState<AddTab>(() => (useProject.getState().project.kind === 'plan' ? 'building' : 'furniture'))
   return (
     <section>
       <h3>{t.sidebar.add}</h3>
       <div className="tabs" role="tablist" aria-label={t.sidebar.add}>
-        {ADD_TABS.map((x) => (
+        {tabs.map((x) => (
           <button
             key={x.id}
             role="tab"
@@ -194,6 +189,9 @@ function ProjectsSection() {
       <ul className="list">
         {items.map((m) => (
           <li key={m.id} className={m.id === currentId ? 'active' : ''}>
+            <span className="kind-mark" title={t.newProject.kinds[m.kind].name}>
+              <Icon icon={KIND_ICONS[m.kind]} />
+            </span>
             <span
               className="grow"
               onClick={async () => {

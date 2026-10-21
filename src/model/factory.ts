@@ -1,13 +1,14 @@
 import { nanoid } from 'nanoid'
-import type { OpeningKind, PrimitiveKind, Project, SceneObject } from './schema'
+import type { OpeningKind, PrimitiveKind, Project, SceneObject, ProjectKind } from './schema'
 import { getT, type Dict } from '../i18n'
 
-export type ProjectTemplate = 'space' | 'plan'
+export type ProjectTemplate = Exclude<ProjectKind, 'model'>
 
 export function newProject(template: ProjectTemplate): Project {
   const now = Date.now()
   return {
     schemaVersion: 1,
+    kind: template,
     id: nanoid(),
     name: template === 'space' ? getT().project.newSpace : getT().project.newPlan,
     createdAt: now,

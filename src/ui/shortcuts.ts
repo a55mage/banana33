@@ -96,10 +96,10 @@ export function handleShortcut(e: KeyboardEvent) {
     case 'v':
       return ui.setTool('select')
     case 'm':
-      return ui.setTool('wall')
+      return useProject.getState().project.kind === 'plan' ? ui.setTool('wall') : undefined
     case 'p':
-      return ui.setTool('door')
+      return useProject.getState().project.kind === 'plan' ? ui.setTool('door') : undefined
     case 'f':
-      return ui.setTool('window')
+      return useProject.getState().project.kind === 'plan' ? ui.setTool('window') : undefined
   }
 }

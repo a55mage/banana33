@@ -7,6 +7,7 @@ import { StatusBar } from './ui/StatusBar'
 import { useProject } from './store/projectStore'
 import { handleShortcut } from './ui/shortcuts'
 import { ShortcutsHelp } from './ui/ShortcutsHelp'
+import { NewProjectDialog } from './ui/NewProjectDialog'
 import { useApplyTheme } from './theme'
 import { useLang } from './i18n'
 import { ToolBanner } from './ui/ToolBanner'
@@ -67,6 +68,7 @@ export function App() {
       <PropertiesPanel />
       <StatusBar />
       <ShortcutsHelp />
+      <NewProjectDialog />
     </div>
   )
 }

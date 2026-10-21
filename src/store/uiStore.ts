@@ -39,6 +39,7 @@ interface UiState {
   /** incrementato per chiedere alla camera di reinquadrare la scena */
   fitNonce: number
   showHelp: boolean
+  showNewProject: boolean
   /** evidenzia le collisioni (rosso, badge, stato); la disposizione automatica le evita comunque */
   showCollisions: boolean
   setTool: (t: Tool) => void
@@ -54,6 +55,7 @@ interface UiState {
   resetForProject: () => void
   requestFit: () => void
   setShowHelp: (v: boolean) => void
+  setShowNewProject: (v: boolean) => void
   toggleCollisions: () => void
 }
 
@@ -69,6 +71,7 @@ export const useUi = create<UiState>((set) => ({
   drag: null,
   fitNonce: 0,
   showHelp: false,
+  showNewProject: false,
   showCollisions: readShowCollisions(),
   setTool: (tool) => set({ tool, wallDraft: null }),
   setView: (view) => set({ view }),
@@ -83,6 +86,7 @@ export const useUi = create<UiState>((set) => ({
   resetForProject: () => set({ selection: null, wallDraft: null, drag: null }),
   requestFit: () => set((s) => ({ fitNonce: s.fitNonce + 1 })),
   setShowHelp: (showHelp) => set({ showHelp }),
+  setShowNewProject: (showNewProject) => set({ showNewProject }),
   toggleCollisions: () =>
     set((s) => {
       try {

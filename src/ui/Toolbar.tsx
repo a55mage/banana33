@@ -17,7 +17,6 @@ import {
   faLanguage,
   faMap,
   faMoon,
-  faPenRuler,
   faRotateLeft,
   faRotateRight,
   faSquarePlus,
@@ -28,7 +27,7 @@ import {
 import { useProject, setUnit } from '../store/projectStore'
 import { useUi, type GizmoMode, type WallMode } from '../store/uiStore'
 import { downloadProject, FILE_EXT, readProjectFile } from '../persistence/file'
-import { newProject, sampleProject } from '../model/factory'
+import { sampleProject } from '../model/factory'
 import type { Unit } from '../model/schema'
 import { formatLength, SNAP_STEPS, UNITS, useUnit } from '../units'
 import { useThemePref, type ThemePref } from '../theme'
@@ -95,7 +94,7 @@ export function Toolbar() {
   const wallMode = useUi((s) => s.wallMode)
   const unit = useUnit()
   const snaps = SNAP_STEPS[UNITS[unit].system]
-  const { setTool, setView, setSnap } = useUi.getState()
+  const { setView, setSnap } = useUi.getState()
   const fileInput = useRef<HTMLInputElement>(null)
 
   const onUpload = async (file: File | undefined) => {
@@ -156,16 +155,7 @@ export function Toolbar() {
           icon={faFolderOpen}
           label={t.toolbar.project}
           items={[
-            { icon: faSquarePlus, label: t.toolbar.newSpace, title: t.toolbar.newSpaceTitle, onSelect: () => useProject.getState().load(newProject('space')) },
-            {
-              icon: faPenRuler,
-              label: t.toolbar.newPlan,
-              title: t.toolbar.newPlanTitle,
-              onSelect: () => {
-                useProject.getState().load(newProject('plan'))
-                setTool('wall')
-              },
-            },
+            { icon: faSquarePlus, label: t.toolbar.newProject, title: t.toolbar.newProjectTitle, onSelect: () => useUi.getState().setShowNewProject(true) },
             { icon: faCouch, label: t.toolbar.sample, title: t.toolbar.sampleTitle, onSelect: () => useProject.getState().load(sampleProject()) },
             'separator',
             { icon: faDownload, label: t.toolbar.download, title: t.toolbar.downloadTitle, onSelect: () => downloadProject(useProject.getState().project) },

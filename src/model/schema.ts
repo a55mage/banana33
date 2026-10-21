@@ -65,12 +65,30 @@ export const SpaceSchema = z.object({
   height: z.number().positive(),
 })
 
-export const ProjectSchema = z.object({
+/** Tipo di progetto, scelto alla creazione e non più modificabile */
+export const ProjectKindSchema = z.enum(['space', 'plan', 'model'])
+
+const DEFAULT_SPACE = { width: 4, depth: 3, height: 2.7 }
+
+/**
+ * Migrazione: i progetti salvati prima del campo `kind` erano "spazio" se avevano il
+ * contenitore, "planimetria" altrimenti. Un progetto spazio ha sempre il contenitore.
+ */
+function migrateProject(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw
+  const p = raw as Record<string, unknown>
+  const kind = p.kind ?? (p.space ? 'space' : 'plan')
+  const space = kind === 'space' ? (p.space ?? DEFAULT_SPACE) : kind === 'plan' ? null : (p.space ?? null)
+  return { ...p, kind, space }
+}
+
+const ProjectObjectSchema = z.object({
   schemaVersion: z.literal(1),
   id: z.string(),
   name: z.string(),
   createdAt: z.number(),
   updatedAt: z.number(),
+  kind: ProjectKindSchema,
   /** unità di misura mostrata nell'interfaccia (i dati restano in metri) */
   unit: z.enum(['mm', 'cm', 'm', 'in', 'ft']).default('cm'),
   space: SpaceSchema.nullable(),
@@ -79,6 +97,8 @@ export const ProjectSchema = z.object({
   objects: z.array(SceneObjectSchema),
   groups: z.array(GroupSchema).default([]),
 })
+
+export const ProjectSchema = z.preprocess(migrateProject, ProjectObjectSchema)
 
 export type Vec2 = z.infer<typeof Vec2Schema>
 export type SceneObject = z.infer<typeof SceneObjectSchema>
@@ -89,7 +109,8 @@ export type Opening = z.infer<typeof OpeningSchema>
 export type OpeningKind = Opening['kind']
 export type Unit = Project['unit']
 export type Space =z.infer<typeof SpaceSchema>
-export type Project = z.infer<typeof ProjectSchema>
+export type Project = z.infer<typeof ProjectObjectSchema>
+export type ProjectKind = z.infer<typeof ProjectKindSchema>
 
 export function parseProject(data: unknown): Project {
   return ProjectSchema.parse(data)

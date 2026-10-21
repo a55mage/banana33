@@ -8,12 +8,10 @@ const it = {
   project: { newSpace: 'Nuovo spazio', newPlan: 'Nuova planimetria', copy: 'copia', sample: 'Stanza di esempio' },
   toolbar: {
     project: 'Progetto',
-    newSpace: 'Nuovo spazio',
-    newSpaceTitle: 'Nuovo progetto di verifica ingombri',
-    newPlan: 'Nuova planimetria',
+    newProject: 'Nuovo progetto…',
+    newProjectTitle: 'Crea un nuovo progetto: spazio, planimetria o modello 3D',
     sample: 'Stanza di esempio',
     sampleTitle: 'Apri la stanza di esempio con divano, gatto, piccione e banana',
-    newPlanTitle: 'Nuova planimetria',
     download: 'Scarica file',
     downloadTitle: 'Scarica il progetto come file',
     upload: 'Apri file…',
@@ -35,6 +33,16 @@ const it = {
     wallMode: { up: 'Muri alti', cutaway: 'Muri ritagliati verso la camera', down: 'Muri bassi' },
     wallModeHint: '(H per cambiare)',
     gizmo: { none: 'Nessun manipolatore (Q)', translate: 'Sposta (W)', rotate: 'Ruota (E)', scale: 'Scala (R)' },
+  },
+  newProject: {
+    title: 'Nuovo progetto',
+    comingSoon: 'In arrivo',
+    fixedHint: 'Il tipo di progetto si sceglie ora e non si può cambiare in seguito.',
+    kinds: {
+      space: { name: 'Spazio', desc: 'Un contenitore rettangolare in cui verificare se gli oggetti ci stanno e disporli.' },
+      plan: { name: 'Planimetria', desc: 'Disegna muri, porte e finestre e arreda le stanze.' },
+      model: { name: 'Modello 3D', desc: 'Modella oggetti fondendo e scavando forme semplici, come in Womp.' },
+    },
   },
   sidebar: {
     space: 'Spazio contenitore',
@@ -278,12 +286,10 @@ const en: Dict = {
   project: { newSpace: 'New space', newPlan: 'New floor plan', copy: 'copy', sample: 'Sample room' },
   toolbar: {
     project: 'Project',
-    newSpace: 'New space',
-    newSpaceTitle: 'New fit-check project',
-    newPlan: 'New floor plan',
+    newProject: 'New project…',
+    newProjectTitle: 'Create a new project: space, floor plan or 3D model',
     sample: 'Sample room',
     sampleTitle: 'Open the sample room with sofa, cat, pigeon and banana',
-    newPlanTitle: 'New floor plan',
     download: 'Download file',
     downloadTitle: 'Download the project as a file',
     upload: 'Open file…',
@@ -305,6 +311,16 @@ const en: Dict = {
     wallMode: { up: 'Walls up', cutaway: 'Walls cut away towards the camera', down: 'Walls down' },
     wallModeHint: '(H to change)',
     gizmo: { none: 'No gizmo (Q)', translate: 'Move (W)', rotate: 'Rotate (E)', scale: 'Scale (R)' },
+  },
+  newProject: {
+    title: 'New project',
+    comingSoon: 'Coming soon',
+    fixedHint: 'The project type is chosen now and cannot be changed later.',
+    kinds: {
+      space: { name: 'Space', desc: 'A rectangular container to check whether objects fit and arrange them.' },
+      plan: { name: 'Floor plan', desc: 'Draw walls, doors and windows and furnish the rooms.' },
+      model: { name: '3D model', desc: 'Model objects by blending and carving simple shapes, like in Womp.' },
+    },
   },
   sidebar: {
     space: 'Container space',
