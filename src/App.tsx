@@ -8,6 +8,7 @@ import { useProject } from './store/projectStore'
 import { handleShortcut } from './ui/shortcuts'
 import { ShortcutsHelp } from './ui/ShortcutsHelp'
 import { NewProjectDialog } from './ui/NewProjectDialog'
+import { ExportDialog } from './ui/ExportDialog'
 import { useApplyTheme } from './theme'
 import { useLang } from './i18n'
 import { ToolBanner } from './ui/ToolBanner'
@@ -69,6 +70,7 @@ export function App() {
       <StatusBar />
       <ShortcutsHelp />
       <NewProjectDialog />
+      <ExportDialog />
     </div>
   )
 }

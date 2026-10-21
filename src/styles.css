@@ -1430,3 +1430,78 @@ button.link:hover:not(:disabled) {
   grid-auto-flow: row;
   grid-template-columns: repeat(3, 1fr);
 }
+
+/* --------------------------------------------------------------- esportazione */
+
+.modal.export-dialog {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modal.export-dialog .field-label {
+  margin: 6px 0 -4px;
+}
+.format-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.format-card {
+  height: auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px;
+  text-align: left;
+  white-space: normal;
+  border-radius: 10px;
+}
+.format-card > .svg-inline--fa {
+  color: var(--accent-text);
+  font-size: 15px;
+}
+.format-card span {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.format-card.active {
+  border-color: var(--amber-glow);
+  background: var(--highlight-soft);
+}
+.progress {
+  position: relative;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.progress > div {
+  height: 100%;
+  background: var(--accent-soft);
+  box-shadow: inset -2px 0 0 var(--accent);
+  transition: width 0.15s;
+}
+.progress > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.export-result {
+  margin: 0;
+  line-height: 1.45;
+}
+.actions.end {
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+@media (max-width: 640px) {
+  .format-cards {
+    grid-template-columns: 1fr;
+  }
+}

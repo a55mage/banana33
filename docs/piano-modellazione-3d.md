@@ -1,6 +1,6 @@
 # Piano di sviluppo — Modalità "Modello 3D" (stile Womp)
 
-Stato: **approvato** · fasi 0–4 completate (21/10/2026)
+Stato: **approvato** · fasi 0–5 completate (21/10/2026)
 
 ## Obiettivo
 

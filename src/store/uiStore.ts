@@ -44,6 +44,7 @@ interface UiState {
   fitNonce: number
   showHelp: boolean
   showNewProject: boolean
+  showExport: boolean
   /** evidenzia le collisioni (rosso, badge, stato); la disposizione automatica le evita comunque */
   showCollisions: boolean
   /** modelli 3D: contorno sempre visibile delle forme che scavano o intersecano */
@@ -62,6 +63,7 @@ interface UiState {
   requestFit: () => void
   setShowHelp: (v: boolean) => void
   setShowNewProject: (v: boolean) => void
+  setShowExport: (v: boolean) => void
   toggleCollisions: () => void
   setShowCutters: (v: boolean) => void
 }
@@ -79,6 +81,7 @@ export const useUi = create<UiState>((set) => ({
   fitNonce: 0,
   showHelp: false,
   showNewProject: false,
+  showExport: false,
   showCollisions: readShowCollisions(),
   showCutters: false,
   setTool: (tool) => set({ tool, wallDraft: null }),
@@ -95,6 +98,7 @@ export const useUi = create<UiState>((set) => ({
   requestFit: () => set((s) => ({ fitNonce: s.fitNonce + 1 })),
   setShowHelp: (showHelp) => set({ showHelp }),
   setShowNewProject: (showNewProject) => set({ showNewProject }),
+  setShowExport: (showExport) => set({ showExport }),
   setShowCutters: (showCutters) => set({ showCutters }),
   toggleCollisions: () =>
     set((s) => {

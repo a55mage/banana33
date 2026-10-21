@@ -12,6 +12,7 @@ import {
   faCrosshairs,
   faCube,
   faDownload,
+  faFileExport,
   faFolderOpen,
   faKeyboard,
   faLanguage,
@@ -134,6 +135,7 @@ export function Toolbar() {
             'separator',
             { icon: faDownload, label: t.toolbar.download, title: t.toolbar.downloadTitle, onSelect: () => downloadProject(useProject.getState().project) },
             { icon: faUpload, label: t.toolbar.upload, title: t.toolbar.uploadTitle, onSelect: () => fileInput.current?.click() },
+            ...(model ? [{ icon: faFileExport, label: `${t.export.title}…`, title: t.export.buttonTitle, onSelect: () => useUi.getState().setShowExport(true) }] : []),
           ]}
         />
         <input
@@ -222,6 +224,11 @@ export function Toolbar() {
               </button>
             ))}
           </div>
+        )}
+        {model && (
+          <button className="primary" onClick={() => useUi.getState().setShowExport(true)} title={t.export.buttonTitle}>
+            <Icon icon={faFileExport} /> {t.export.button}
+          </button>
         )}
         <button onClick={() => useUi.getState().requestFit()} title={t.toolbar.centerTitle}>
           <Icon icon={faCrosshairs} /> {t.toolbar.center}
