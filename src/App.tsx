@@ -5,6 +5,7 @@ import { LeftPanel } from './ui/LeftPanel'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { StatusBar } from './ui/StatusBar'
 import { useProject } from './store/projectStore'
+import { useUi } from './store/uiStore'
 import { handleShortcut } from './ui/shortcuts'
 import { ShortcutsHelp } from './ui/ShortcutsHelp'
 import { NewProjectDialog } from './ui/NewProjectDialog'
@@ -52,19 +53,32 @@ function useShortcuts() {
   }, [])
 }
 
+/** Messaggio al posto della vista quando la scheda video non riesce a disegnare */
+function RenderError() {
+  const error = useUi((s) => s.renderError)
+  if (!error) return null
+  return (
+    <div className="render-error" role="alert">
+      {error}
+    </div>
+  )
+}
+
 export function App() {
+  const kind = useProject((s) => s.project.kind)
   const ready = useRestoreAndAutosave()
   useShortcuts()
   useApplyTheme()
   const lang = useLang((s) => s.lang)
   useEffect(() => void (document.documentElement.lang = lang), [lang])
   return (
-    <div className="app">
+    <div className={`app kind-${kind}`}>
       <Toolbar />
       <LeftPanel />
       <main className="viewport">
         {ready && <Viewport />}
         <ToolBanner />
+        <RenderError />
       </main>
       <PropertiesPanel />
       <StatusBar />

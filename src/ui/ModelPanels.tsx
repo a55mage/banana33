@@ -57,6 +57,7 @@ const MIME = 'application/x-banana33-node'
 
 function PaletteSection() {
   const t = useT()
+  const notice = useUi((s) => s.notice)
   return (
     <section>
       <h3>{t.sculpt.addShape}</h3>
@@ -68,6 +69,7 @@ function PaletteSection() {
           </button>
         ))}
       </div>
+      {notice && <p className="hint warn">{notice}</p>}
     </section>
   )
 }

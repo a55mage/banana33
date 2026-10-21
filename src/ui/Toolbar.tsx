@@ -195,7 +195,7 @@ export function Toolbar() {
             </button>
           </div>
         )}
-        <div className="segmented" role="group" aria-label="Gizmo">
+        <div className="segmented" role="group" aria-label={t.toolbar.gizmoGroup}>
           {GIZMOS.map((g) => (
             <button
               key={g.id}

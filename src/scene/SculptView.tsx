@@ -85,13 +85,14 @@ export function SculptView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, count])
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // un nuovo shader riparte senza errori: se non compila, onShaderError riporterà il messaggio
+    useUi.getState().setRenderError(null)
+    return () => {
       model.dispose()
       shadow.dispose()
-    },
-    [model, shadow],
-  )
+    }
+  }, [model, shadow])
 
   // valori del modello e del tema: aggiornati a ogni modifica, senza ricompilare
   useEffect(() => {

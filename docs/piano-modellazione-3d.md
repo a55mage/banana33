@@ -1,6 +1,6 @@
 # Piano di sviluppo — Modalità "Modello 3D" (stile Womp)
 
-Stato: **approvato** · fasi 0–6 completate (21/10/2026)
+Stato: **completato** · fasi 0–7 (21/10/2026)
 
 ## Obiettivo
 
@@ -110,7 +110,7 @@ L'ordine dei nodi conta: ogni nodo si combina con il risultato dei precedenti de
 | 4 | **Funzioni Womp** | goop, scava/interseca morbidi, arrotondamento, simmetria, materiali, gruppi con operazione propria; poi specchio e finitura per forma, guscio, selezione multipla, forme che scavano sempre visibili | si ottengono forme "organiche" come in Womp |
 | 5 | **Esportazione** | marching cubes in Web Worker, STL/OBJ/GLB, scelta risoluzione | il file si apre in un programma esterno (Blender, slicer) |
 | 6 | **Integrazione** | "Salva come oggetto": il modello entra nel catalogo di Spazio e Planimetria come oggetto personalizzato (ingombro = bounding box, mesh rigenerata dall'SDF) | un modello creato si posiziona e collide come gli altri oggetti |
-| 7 | **Rifinitura** | limiti e prestazioni, mobile, traduzioni, test | build pulita, test verdi |
+| 7 | **Rifinitura** | limite di forme dalla scheda video, risoluzione ridotta durante l'orbita, messaggio se lo shader non compila, mobile, traduzioni, test | build pulita, test verdi |
 
 Ogni fase si chiude con build, verifica nel browser e un commit separato.
 

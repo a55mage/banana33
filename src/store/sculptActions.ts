@@ -13,6 +13,7 @@ import {
 import { useProject } from './projectStore'
 import { useUi } from './uiStore'
 import { getT } from '../i18n'
+import { maxSculptNodes } from '../sculpt/limits'
 import { decompose, localMatrix } from '../sculpt/transform'
 
 /** Documento del modello corrente (null se il progetto non è un modello 3D) */
@@ -73,9 +74,17 @@ function insertionParent(doc: SculptDoc): string | null {
   return node.kind === 'group' ? node.id : node.parentId
 }
 
+/** Vero (e avviso nell'interfaccia) se aggiungere `extra` nodi supererebbe il limite della scheda video */
+function overLimit(doc: SculptDoc, extra: number): boolean {
+  const limit = maxSculptNodes()
+  const over = doc.nodes.length + extra > limit
+  useUi.getState().setNotice(over ? getT().sculpt.limit(limit) : null)
+  return over
+}
+
 export function addShape(kind: SculptShape, patch: Partial<SculptNode> = {}): string | null {
   const doc = currentSculpt()
-  if (!doc) return null
+  if (!doc || overLimit(doc, 1)) return null
   const t = getT().sculpt.shapes
   const count = doc.nodes.filter((n) => n.kind === kind).length
   const node = newSculptNode(kind, { name: `${t[kind]} ${count + 1}`, parentId: insertionParent(doc), ...patch })
@@ -109,6 +118,7 @@ export function duplicateNodes(ids: string[]): string[] {
   const doc = currentSculpt()
   if (!doc) return []
   const roots = ids.filter((id) => !ids.some((other) => other !== id && isDescendant(doc, id, other)))
+  if (overLimit(doc, roots.reduce((n, id) => n + subtreeIds(doc, id).length, 0))) return []
   const copies: string[] = []
   editSculpt((d) => {
     for (const rootId of roots) {
@@ -160,7 +170,7 @@ export function groupNodes(ids: string[]): string | null {
   if (!doc || ids.length === 0) return null
   const nodes = doc.nodes.filter((n) => ids.includes(n.id))
   const parentId = nodes[0].parentId
-  if (nodes.some((n) => n.parentId !== parentId)) return null
+  if (nodes.some((n) => n.parentId !== parentId) || overLimit(doc, 1)) return null
   const count = doc.nodes.filter((n) => n.kind === 'group').length
   const group = newSculptNode('group', { name: `${getT().sculpt.shapes.group} ${count + 1}`, parentId })
   editSculpt((d) => {

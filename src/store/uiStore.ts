@@ -45,6 +45,10 @@ interface UiState {
   showHelp: boolean
   showNewProject: boolean
   showExport: boolean
+  /** avviso temporaneo (es. limite di forme raggiunto) */
+  notice: string | null
+  /** errore del disegno 3D (shader non compilato dalla scheda video) */
+  renderError: string | null
   /** evidenzia le collisioni (rosso, badge, stato); la disposizione automatica le evita comunque */
   showCollisions: boolean
   /** modelli 3D: contorno sempre visibile delle forme che scavano o intersecano */
@@ -64,6 +68,8 @@ interface UiState {
   setShowHelp: (v: boolean) => void
   setShowNewProject: (v: boolean) => void
   setShowExport: (v: boolean) => void
+  setNotice: (n: string | null) => void
+  setRenderError: (e: string | null) => void
   toggleCollisions: () => void
   setShowCutters: (v: boolean) => void
 }
@@ -82,6 +88,8 @@ export const useUi = create<UiState>((set) => ({
   showHelp: false,
   showNewProject: false,
   showExport: false,
+  notice: null,
+  renderError: null,
   showCollisions: readShowCollisions(),
   showCutters: false,
   setTool: (tool) => set({ tool, wallDraft: null }),
@@ -94,11 +102,13 @@ export const useUi = create<UiState>((set) => ({
   setWallDraft: (wallDraft) => set({ wallDraft }),
   setCursor: (cursor) => set({ cursor }),
   setDrag: (drag) => set({ drag }),
-  resetForProject: () => set({ selection: null, wallDraft: null, drag: null }),
+  resetForProject: () => set({ selection: null, wallDraft: null, drag: null, notice: null, renderError: null }),
   requestFit: () => set((s) => ({ fitNonce: s.fitNonce + 1 })),
   setShowHelp: (showHelp) => set({ showHelp }),
   setShowNewProject: (showNewProject) => set({ showNewProject }),
   setShowExport: (showExport) => set({ showExport }),
+  setNotice: (notice) => set({ notice }),
+  setRenderError: (renderError) => set({ renderError }),
   setShowCutters: (showCutters) => set({ showCutters }),
   toggleCollisions: () =>
     set((s) => {

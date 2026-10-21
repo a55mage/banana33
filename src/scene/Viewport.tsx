@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Grid, OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei'
+import { AdaptiveDpr, Grid, OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei'
 import type { Vec2 } from '../model/schema'
 import { useProject, addWall } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
@@ -16,6 +16,8 @@ import { useSceneTheme } from '../theme'
 import { SculptView } from './SculptView'
 import { SculptGizmo, SculptSelectionGhost } from './SculptSelection'
 import { compileSculpt } from '../sculpt/compile'
+import { setGpuFragmentUniforms } from '../sculpt/limits'
+import { getT } from '../i18n'
 
 const ENDPOINT_SNAP = 0.15
 
@@ -90,6 +92,8 @@ function Cameras() {
         target={[cx, frame.targetY, cz]}
         enabled={!drag}
         enableRotate={view === '3d'}
+        // il ray marching dei modelli 3D è costoso: mentre si muove la vista si disegna a risoluzione ridotta
+        regress={kind === 'model'}
         screenSpacePanning
         maxPolarAngle={Math.PI / 2 - 0.02}
       />
@@ -186,7 +190,21 @@ export function Viewport() {
   }, [])
 
   return (
-    <Canvas shadows flat dpr={[1, 2]} gl={{ alpha: true }} onContextMenu={(e) => e.preventDefault()}>
+    <Canvas
+      shadows
+      flat
+      dpr={[1, 2]}
+      // durante l'orbita la risoluzione può scendere fino a metà (vedi AdaptiveDpr e `regress`)
+      performance={{ min: 0.5 }}
+      gl={{ alpha: true }}
+      onCreated={({ gl }) => {
+        setGpuFragmentUniforms(gl.capabilities.maxFragmentUniforms)
+        // uno shader che la scheda video non compila diventa un messaggio, non una vista vuota
+        gl.debug.onShaderError = () => useUi.getState().setRenderError(getT().sculpt.renderError)
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <AdaptiveDpr />
       <Cameras />
       <ambientLight intensity={view === '2d' ? 1.2 : theme.ambient} />
       <directionalLight position={[8, 15, 6]} color={theme.sunColor} intensity={view === '2d' ? 0.6 : theme.sun} castShadow={view === '3d'} shadow-mapSize={[2048, 2048]} />

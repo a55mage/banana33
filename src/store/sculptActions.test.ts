@@ -3,8 +3,12 @@ import { useProject } from './projectStore'
 import { useUi } from './uiStore'
 import { newProject } from '../model/factory'
 import { emptySculptDoc, childrenOf, type SculptDoc } from '../model/sculpt'
+import { setGpuFragmentUniforms } from '../sculpt/limits'
 import {
   addShape,
+  pickNode,
+  selectedNodeIds,
+  updateNodes,
   deleteNodes,
   duplicateNodes,
   groupNodes,
@@ -104,6 +108,33 @@ describe('azioni del modello 3D', () => {
     toggleSymmetry('x')
     expect(doc().material).toBe('metal')
     expect(doc().symmetry).toEqual({ x: true, y: false, z: false })
+  })
+
+  it('selezione multipla con Ctrl/Shift e modifica di tutte le forme insieme', () => {
+    const a = addShape('sphere', { name: 'A' })!
+    const b = addShape('box', { name: 'B' })!
+    pickNode(a)
+    pickNode(b, true)
+    expect(selectedNodeIds()).toEqual([a, b])
+    expect(useUi.getState().selection?.type).toBe('nodes')
+    updateNodes(selectedNodeIds(), { op: 'subtract' })
+    expect(doc().nodes.every((n) => n.op === 'subtract')).toBe(true)
+    // un solo passo di annulla per tutte
+    useProject.getState().undo()
+    expect(doc().nodes.every((n) => n.op === 'add')).toBe(true)
+    // Ctrl+clic su una già selezionata la toglie
+    pickNode(a, true)
+    expect(useUi.getState().selection).toEqual({ type: 'node', id: b })
+  })
+
+  it('oltre il limite della scheda video non si aggiungono forme', () => {
+    setGpuFragmentUniforms(32 + 7 * 16) // 16 nodi
+    for (let i = 0; i < 16; i++) expect(addShape('sphere')).not.toBeNull()
+    expect(addShape('sphere')).toBeNull()
+    expect(duplicateNodes([doc().nodes[0].id])).toEqual([])
+    expect(useUi.getState().notice).toContain('16')
+    expect(doc().nodes).toHaveLength(16)
+    setGpuFragmentUniforms(4096)
   })
 
   it('fuori da un modello 3D le azioni non fanno nulla', () => {

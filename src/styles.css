@@ -1505,3 +1505,21 @@ button.link:hover:not(:disabled) {
     grid-template-columns: 1fr;
   }
 }
+
+.render-error {
+  position: absolute;
+  inset: auto 16px 16px 16px;
+  z-index: 5;
+  padding: 10px 14px;
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--warn);
+  box-shadow: var(--shadow-lg);
+}
+@media (max-width: 900px) {
+  /* nei modelli 3D palette e livelli servono prima dell'inspector */
+  .app.kind-model {
+    grid-template-areas: 'top' 'view' 'left' 'right' 'status';
+  }
+}
