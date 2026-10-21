@@ -69,26 +69,33 @@ float sdCapsule(vec3 p, vec4 P) {
   return length(p) - radius;
 }
 
-void opUnion(inout float a, inout vec3 ca, float b, vec3 cb, float k) {
+// le operazioni mescolano distanza, colore (ca) e finitura (ma) con lo stesso peso h
+void opUnion(inout float a, inout vec3 ca, inout vec4 ma, float b, vec3 cb, vec4 mb, float k) {
   k = max(k, 1e-5);
   float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
   a = mix(b, a, h) - k * h * (1.0 - h);
   ca = mix(cb, ca, h);
+  ma = mix(mb, ma, h);
 }
 
-void opSubtract(inout float a, inout vec3 ca, float b, vec3 cb, float k) {
+void opSubtract(inout float a, inout vec3 ca, inout vec4 ma, float b, vec3 cb, vec4 mb, float k) {
   k = max(k, 1e-5);
   float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
   a = mix(a, -b, h) + k * h * (1.0 - h);
   ca = mix(ca, cb, h);
+  ma = mix(ma, mb, h);
 }
 
-void opIntersect(inout float a, inout vec3 ca, float b, vec3 cb, float k) {
+void opIntersect(inout float a, inout vec3 ca, inout vec4 ma, float b, vec3 cb, vec4 mb, float k) {
   k = max(k, 1e-5);
   float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
   a = mix(b, a, h) + k * h * (1.0 - h);
   ca = mix(cb, ca, h);
+  ma = mix(mb, ma, h);
 }
+
+// guscio: parete di spessore t con la superficie esterna invariata
+float shellOp(float d, float t) { return t > 0.0 ? abs(d + t * 0.5) - t * 0.5 : d; }
 `
 
 /** Uniform comuni a modello e ombra; N = numero di nodi (costante dello shader) */
@@ -96,12 +103,14 @@ const uniformsDecl = (n: number) => /* glsl */ `
 uniform mat4 uInv[${n}];
 uniform vec4 uParam[${n}];
 uniform vec4 uColor[${n}];
+uniform vec4 uMat[${n}];
+uniform vec4 uDefaultMat;
 uniform vec3 uLight;
 `
 
 /** Funzioni basate sulla scena: distanza, normale, ombra morbida, occlusione ambientale */
 const SCENE_HELPERS = /* glsl */ `
-float mapD(vec3 p) { vec3 c; return sceneMap(p, c); }
+float mapD(vec3 p) { vec3 c; vec4 m; return sceneMap(p, c, m); }
 
 vec3 calcNormal(vec3 p) {
   const vec2 e = vec2(1.0, -1.0) * 0.0004;
@@ -148,7 +157,6 @@ ${uniformsDecl(n)}
 uniform mat4 uProj;
 uniform vec3 uBoxMin;
 uniform vec3 uBoxMax;
-uniform int uMaterial; // 0 opaco, 1 lucido, 2 metallo, 3 argilla
 uniform vec3 uSky;
 uniform vec3 uGround;
 varying vec3 vWorld;
@@ -175,9 +183,10 @@ void main() {
   float t = max(tb.x, 0.0);
   bool hit = false;
   vec3 albedo;
+  vec4 mat; // riflesso, lucentezza/200, metallicità, diffusione "argilla"
   float h = FAR;
   for (int i = 0; i < 300; i++) {
-    h = sceneMap(ro + rd * t, albedo);
+    h = sceneMap(ro + rd * t, albedo, mat);
     float eps = 0.00015 * max(t, 0.5);
     // distanza negativa: il passo ha superato la superficie (succede con fusioni e sottrazioni,
     // che non sono distanze esatte); va considerato comunque un contatto
@@ -196,7 +205,8 @@ void main() {
   vec3 V = -rd;
   vec3 H = normalize(L + V);
   float ndl = dot(n, L);
-  float dif = uMaterial == 3 ? clamp((ndl + 0.4) / 1.4, 0.0, 1.0) : clamp(ndl, 0.0, 1.0);
+  float wrap = 0.4 * mat.w;
+  float dif = clamp((ndl + wrap) / (1.0 + wrap), 0.0, 1.0);
   float sha = dif > 0.0 ? softShadow(pos + n * 0.002, L, 1.5) : 0.0;
   float ao = calcAO(pos, n);
   float skyAmt = 0.5 + 0.5 * n.y;
@@ -206,17 +216,12 @@ void main() {
 
   vec3 sun = vec3(1.0, 0.96, 0.9) * 1.5;
   vec3 diffuse = albedo * (dif * sha * sun + skyAmt * ao * uSky * 0.55 + clamp(-n.y, 0.0, 1.0) * ao * uGround * 0.25);
-  vec3 col;
-  if (uMaterial == 2) {
-    // metallo: poca diffusione, riflessi colorati dal materiale
-    vec3 spec = albedo * pow(clamp(dot(n, H), 0.0, 1.0), 60.0) * 2.0 * sha;
-    col = diffuse * 0.25 + spec + env * albedo * (0.55 + 0.45 * fre) * ao;
-  } else {
-    float shin = uMaterial == 1 ? 140.0 : 18.0;
-    float specAmt = uMaterial == 1 ? 0.6 : uMaterial == 0 ? 0.05 : 0.0;
-    float envAmt = uMaterial == 1 ? 0.35 : 0.04;
-    col = diffuse + vec3(pow(clamp(dot(n, H), 0.0, 1.0), shin)) * specAmt * dif * sha + env * fre * envAmt * ao;
-  }
+  // la finitura arriva dalla forma (mescolata nelle fusioni): dielettrico e metallo si interpolano
+  float shin = max(mat.y * 200.0, 2.0);
+  float ndh = pow(clamp(dot(n, H), 0.0, 1.0), shin);
+  vec3 dielectric = diffuse + vec3(ndh) * mat.x * dif * sha + env * fre * mix(0.04, 0.35, mat.x) * ao;
+  vec3 metallic = diffuse * 0.25 + albedo * ndh * 2.0 * sha + env * albedo * (0.55 + 0.45 * fre) * ao;
+  vec3 col = mix(dielectric, metallic, mat.z);
 
   vec4 clip = uProj * viewMatrix * vec4(pos, 1.0);
   gl_FragDepth = clamp(clip.z / clip.w * 0.5 + 0.5, 0.0, 1.0);

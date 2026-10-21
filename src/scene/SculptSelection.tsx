@@ -88,19 +88,23 @@ function GhostShape({ node, matrix, color }: { node: SculptNode; matrix: Matrix4
   )
 }
 
-/** Contorno della selezione: la forma, o tutte le forme del gruppo selezionato */
+/**
+ * Contorno della selezione (le forme selezionate e il contenuto dei gruppi selezionati) e,
+ * se richiesto, di tutte le forme che scavano o intersecano, altrimenti invisibili.
+ */
 export function SculptSelectionGhost() {
-  const sel = useSelectedNode()
+  const doc = useProject((s) => s.project.sculpt)
+  const selection = useUi((s) => s.selection)
+  const showCutters = useUi((s) => s.showCutters)
   const theme = useSceneTheme()
-  if (!sel) return null
-  const { doc, node } = sel
-  const shapes = subtreeIds(doc, node.id)
-    .map((id) => doc.nodes.find((n) => n.id === id)!)
-    .filter((n) => n.kind !== 'group' && !n.hidden)
+  if (!doc) return null
+  const selectedIds = selection?.type === 'node' ? [selection.id] : selection?.type === 'nodes' ? selection.ids : []
+  const selected = new Set(selectedIds.flatMap((id) => subtreeIds(doc, id)))
+  const shown = doc.nodes.filter((n) => n.kind !== 'group' && !n.hidden && (selected.has(n.id) || (showCutters && n.op !== 'add')))
   return (
     <>
-      {shapes.map((n) => (
-        <GhostShape key={n.id} node={n} matrix={worldMatrix(doc, n.id)} color={theme.selected} />
+      {shown.map((n) => (
+        <GhostShape key={n.id} node={n} matrix={worldMatrix(doc, n.id)} color={selected.has(n.id) ? theme.selected : theme.edge} />
       ))}
     </>
   )

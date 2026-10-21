@@ -21,6 +21,8 @@ export type Selection =
   | { type: 'object' | 'wall' | 'opening' | 'group'; id: string }
   /** forma o gruppo di un modello 3D */
   | { type: 'node'; id: string }
+  /** più forme di un modello 3D (Ctrl/Shift + clic) */
+  | { type: 'nodes'; ids: string[] }
   /** più oggetti selezionati con Ctrl/Shift (non ancora raggruppati) */
   | { type: 'multi'; ids: string[] }
   | null
@@ -44,6 +46,8 @@ interface UiState {
   showNewProject: boolean
   /** evidenzia le collisioni (rosso, badge, stato); la disposizione automatica le evita comunque */
   showCollisions: boolean
+  /** modelli 3D: contorno sempre visibile delle forme che scavano o intersecano */
+  showCutters: boolean
   setTool: (t: Tool) => void
   setView: (v: ViewMode) => void
   setGizmo: (g: GizmoMode) => void
@@ -59,6 +63,7 @@ interface UiState {
   setShowHelp: (v: boolean) => void
   setShowNewProject: (v: boolean) => void
   toggleCollisions: () => void
+  setShowCutters: (v: boolean) => void
 }
 
 export const useUi = create<UiState>((set) => ({
@@ -75,6 +80,7 @@ export const useUi = create<UiState>((set) => ({
   showHelp: false,
   showNewProject: false,
   showCollisions: readShowCollisions(),
+  showCutters: false,
   setTool: (tool) => set({ tool, wallDraft: null }),
   setView: (view) => set({ view }),
   setWallMode: (wallMode) => set({ wallMode }),
@@ -89,6 +95,7 @@ export const useUi = create<UiState>((set) => ({
   requestFit: () => set((s) => ({ fitNonce: s.fitNonce + 1 })),
   setShowHelp: (showHelp) => set({ showHelp }),
   setShowNewProject: (showNewProject) => set({ showNewProject }),
+  setShowCutters: (showCutters) => set({ showCutters }),
   toggleCollisions: () =>
     set((s) => {
       try {

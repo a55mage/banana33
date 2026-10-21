@@ -67,12 +67,34 @@ describe('compilazione del modello', () => {
   it('genera GLSL con un blocco per nodo e uniform della giusta dimensione', () => {
     const c = compileSculpt(sampleSculpt())
     const glsl = sculptGLSL(c)
-    expect(glsl).toContain('float sceneMap(vec3 p, out vec3 col)')
+    expect(glsl).toContain('float sceneMap(vec3 p, out vec3 col, out vec4 mat)')
     expect(glsl.match(/uInv\[\d+\] \* vec4/g)).toHaveLength(c.count - 1) // il gruppo non ha forma
     expect(glsl).toContain('opSubtract')
     const u = sculptUniforms(c)
     expect(u.count).toBe(c.count)
     expect(u.inv[0].elements[3]).toBe(1) // fattore di distanza nella riga libera
+  })
+
+  it('lo specchio duplica la forma dall’altra parte, da qualunque lato si trovi', () => {
+    const c = compileSculpt(doc([ball({ position: [-0.3, 0, 0], mirror: { x: true, y: false, z: false } })]))
+    expect(evaluateSculpt(c, [-0.3, 0, 0]).d).toBeCloseTo(-0.1, 6)
+    expect(evaluateSculpt(c, [0.3, 0, 0]).d).toBeCloseTo(-0.1, 6)
+    expect(c.bounds!.max[0]).toBeCloseTo(0.4)
+    // le copie specchiate sono codice dello shader: cambiano la chiave
+    const plain = compileSculpt(doc([ball({ position: [-0.3, 0, 0] })]))
+    expect(plain.key).not.toBe(c.key)
+  })
+
+  it('il guscio svuota la forma lasciando una parete', () => {
+    const c = compileSculpt(doc([ball({ shell: 0.02 })]))
+    expect(evaluateSculpt(c, [0.095, 0, 0]).d).toBeLessThan(0) // nella parete
+    expect(evaluateSculpt(c, [0, 0, 0]).d).toBeGreaterThan(0) // vuoto al centro
+  })
+
+  it('ogni forma ha la sua finitura; senza, vale quella del modello', () => {
+    const c = compileSculpt(doc([ball({ material: 'metal' }), ball({ position: [0.5, 0, 0] })], { material: 'clay' }))
+    expect(evaluateSculpt(c, [0, 0, 0]).m[2]).toBe(1) // metallo
+    expect(evaluateSculpt(c, [0.5, 0, 0]).m[3]).toBe(1) // argilla dal modello
   })
 
   it('un modello vuoto non ha ingombro', () => {

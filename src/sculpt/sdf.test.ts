@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { opIntersect, opSubtract, opUnion, sdShape, type ShapeKind, type V3 } from './sdf'
+import { MATERIAL_PARAMS, opIntersect, opShell, opSubtract, opUnion, sdShape, type ShapeKind, type V3 } from './sdf'
 
 const S: V3 = [0.2, 0.2, 0.2]
 const at = (kind: ShapeKind, p: V3, s: V3 = S, r = 0) => sdShape(kind, p, s, r)
@@ -59,10 +59,11 @@ describe('forme SDF', () => {
 describe('operazioni', () => {
   const red = [1, 0, 0] as [number, number, number]
   const blue = [0, 0, 1] as [number, number, number]
+  const m = MATERIAL_PARAMS.glossy
 
   it('senza fusione sono min, max(a, −b) e max', () => {
-    const a = { d: 0.3, c: red }
-    const b = { d: -0.1, c: blue }
+    const a = { d: 0.3, c: red, m }
+    const b = { d: -0.1, c: blue, m }
     expect(opUnion(a, b, 0).d).toBeCloseTo(-0.1)
     expect(opSubtract(a, b, 0).d).toBeCloseTo(0.3)
     expect(opIntersect(a, b, 0).d).toBeCloseTo(0.3)
@@ -70,15 +71,24 @@ describe('operazioni', () => {
   })
 
   it('la fusione morbida "gonfia" l’unione e mescola i colori', () => {
-    const a = { d: 0.01, c: red }
-    const b = { d: 0.01, c: blue }
+    const a = { d: 0.01, c: red, m: MATERIAL_PARAMS.matte }
+    const b = { d: 0.01, c: blue, m: MATERIAL_PARAMS.metal }
     const u = opUnion(a, b, 0.05)
     expect(u.d).toBeLessThan(0.01)
     expect(u.c[0]).toBeCloseTo(0.5)
     expect(u.c[2]).toBeCloseTo(0.5)
+    // anche la finitura si mescola: metà opaco, metà metallo
+    expect(u.m[2]).toBeCloseTo(0.5)
+  })
+
+  it('il guscio lascia la superficie esterna e svuota l’interno', () => {
+    expect(opShell(0, 0.02)).toBeCloseTo(0) // superficie esterna
+    expect(opShell(-0.01, 0.02)).toBeCloseTo(-0.01) // dentro la parete
+    expect(opShell(-0.05, 0.02)).toBeCloseTo(0.03) // nel vuoto interno
+    expect(opShell(-0.05, 0)).toBe(-0.05) // senza guscio resta pieno
   })
 
   it('la sottrazione scava: un punto dentro entrambe le forme è fuori', () => {
-    expect(opSubtract({ d: -0.05, c: red }, { d: -0.02, c: blue }, 0).d).toBeGreaterThan(0)
+    expect(opSubtract({ d: -0.05, c: red, m }, { d: -0.02, c: blue, m }, 0).d).toBeGreaterThan(0)
   })
 })

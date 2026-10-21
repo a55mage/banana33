@@ -1425,3 +1425,8 @@ button.link:hover:not(:disabled) {
   color: var(--muted);
   margin-bottom: -4px;
 }
+/* cinque finiture: due righe invece di una troppo stretta */
+.segmented.wide.finish {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(3, 1fr);
+}

@@ -5,12 +5,11 @@ import { useProject } from '../store/projectStore'
 import { compileSculpt, sculptGLSL, sculptUniforms, type CompiledSculpt } from '../sculpt/compile'
 import { SCULPT_VERTEX, sculptFragment, shadowFragment } from '../sculpt/glsl'
 import { useResolvedTheme } from '../theme'
-import type { SculptMaterial } from '../model/sculpt'
 import { pickSculpt } from '../sculpt/pick'
 import { useUi } from '../store/uiStore'
 import { gizmoBusy } from './Gizmo'
+import { pickNode } from '../store/sculptActions'
 
-const MATERIAL_INDEX: Record<SculptMaterial, number> = { matte: 0, glossy: 1, metal: 2, clay: 3 }
 /** luce principale: dall'alto, davanti a destra */
 const LIGHT = new Vector3(0.5, 0.9, 0.35).normalize()
 const noRaycast = () => null
@@ -20,6 +19,8 @@ function baseUniforms(n: number) {
     uInv: { value: Array.from({ length: n }, () => new Matrix4()) },
     uParam: { value: Array.from({ length: n }, () => new Vector4()) },
     uColor: { value: Array.from({ length: n }, () => new Vector4()) },
+    uMat: { value: Array.from({ length: n }, () => new Vector4()) },
+    uDefaultMat: { value: new Vector4() },
     uLight: { value: LIGHT.clone() },
   }
 }
@@ -30,11 +31,14 @@ function applyUniforms(mat: ShaderMaterial, c: CompiledSculpt) {
   const inv = mat.uniforms.uInv.value as Matrix4[]
   const param = mat.uniforms.uParam.value as Vector4[]
   const color = mat.uniforms.uColor.value as Vector4[]
+  const finish = mat.uniforms.uMat.value as Vector4[]
   for (let i = 0; i < u.count; i++) {
     inv[i].copy(u.inv[i])
     param[i].fromArray(u.param[i])
     color[i].fromArray(u.color[i])
+    finish[i].fromArray(u.mat[i])
   }
+  ;(mat.uniforms.uDefaultMat.value as Vector4).fromArray(c.defaultMat)
 }
 
 /**
@@ -50,7 +54,7 @@ export function SculptView() {
   const count = Math.max(compiled?.count ?? 1, 1)
 
   const { model, shadow } = useMemo(() => {
-    const glsl = compiled ? sculptGLSL(compiled) : 'float sceneMap(vec3 p, out vec3 col) { col = NEUTRAL; return FAR; }'
+    const glsl = compiled ? sculptGLSL(compiled) : 'float sceneMap(vec3 p, out vec3 col, out vec4 mat) { col = NEUTRAL; mat = uDefaultMat; return FAR; }'
     const model = new ShaderMaterial({
       vertexShader: SCULPT_VERTEX,
       fragmentShader: sculptFragment(count, glsl),
@@ -59,7 +63,6 @@ export function SculptView() {
         uProj: { value: new Matrix4() },
         uBoxMin: { value: new Vector3() },
         uBoxMax: { value: new Vector3() },
-        uMaterial: { value: 1 },
         uSky: { value: new Color() },
         uGround: { value: new Color() },
       },
@@ -95,7 +98,6 @@ export function SculptView() {
     if (!compiled || !doc) return
     applyUniforms(model, compiled)
     applyUniforms(shadow, compiled)
-    model.uniforms.uMaterial.value = MATERIAL_INDEX[doc.material]
     const dark = theme === 'dark'
     ;(model.uniforms.uSky.value as Color).set(dark ? '#5d6f7d' : '#c9dcef')
     ;(model.uniforms.uGround.value as Color).set(dark ? '#2a2b25' : '#b8b2a4')
@@ -107,13 +109,13 @@ export function SculptView() {
   })
 
   const onPick = (e: ThreeEvent<MouseEvent>) => {
-    const ui = useUi.getState()
-    if (e.delta > 4 || gizmoBusy() || !compiled) return
+    if (e.delta > 4 || gizmoBusy() || !compiled || useUi.getState().tool !== 'select') return
     const { origin, direction } = e.ray
     const hit = pickSculpt(compiled, [origin.x, origin.y, origin.z], [direction.x, direction.y, direction.z])
     if (!hit) return // nessuna forma: il clic passa al pavimento, che deseleziona
     e.stopPropagation()
-    ui.setSelection({ type: 'node', id: hit.nodeId })
+    const n = e.nativeEvent
+    pickNode(hit.nodeId, n.ctrlKey || n.metaKey || n.shiftKey)
   }
 
   const b = compiled?.bounds

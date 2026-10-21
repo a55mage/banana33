@@ -1,6 +1,6 @@
 import { Vector3 } from 'three'
-import { evaluateSculpt, type CompiledItem, type CompiledShape, type CompiledSculpt } from './compile'
-import { sdShape, type V3 } from './sdf'
+import { evaluateSculpt, shapeDistance, type CompiledItem, type CompiledShape, type CompiledSculpt } from './compile'
+import type { V3 } from './sdf'
 
 export interface PickHit {
   point: V3
@@ -58,8 +58,7 @@ export function pickSculpt(c: CompiledSculpt, origin: V3, dir: V3, maxDistance =
   let best: CompiledShape | null = null
   let bestD = Infinity
   for (const s of shapesOf(c.items)) {
-    const l = q.clone().applyMatrix4(s.inv)
-    const dist = Math.abs(sdShape(s.shape, [l.x, l.y, l.z], s.size, s.round) * s.distScale)
+    const dist = Math.abs(shapeDistance(s, q))
     if (dist < bestD) {
       bestD = dist
       best = s

@@ -1,6 +1,6 @@
 # Piano di sviluppo — Modalità "Modello 3D" (stile Womp)
 
-Stato: **proposta, da approvare** · 21/10/2026
+Stato: **approvato** · fasi 0–4 completate (21/10/2026)
 
 ## Obiettivo
 
@@ -107,7 +107,7 @@ L'ordine dei nodi conta: ogni nodo si combina con il risultato dei precedenti de
 | 1 | **Dati e stato** | schema `SculptDoc`, azioni (aggiungi, modifica, riordina, raggruppa), progetto di esempio | si salva, si ricarica, annulla/ripeti funziona |
 | 2 | **Motore SDF** | funzioni SDF in GLSL e in TS, generatore di shader, ray marching, luce, `gl_FragDepth` | il modello di esempio si vede correttamente e a 60 fps |
 | 3 | **Interazione** | selezione al clic, manipolatore, inspector, livelli, scorciatoie | si modella un oggetto semplice senza toccare il codice |
-| 4 | **Funzioni Womp** | goop, scava/interseca morbidi, arrotondamento, simmetria, materiali, gruppi con operazione propria | si ottengono forme "organiche" come in Womp |
+| 4 | **Funzioni Womp** | goop, scava/interseca morbidi, arrotondamento, simmetria, materiali, gruppi con operazione propria; poi specchio e finitura per forma, guscio, selezione multipla, forme che scavano sempre visibili | si ottengono forme "organiche" come in Womp |
 | 5 | **Esportazione** | marching cubes in Web Worker, STL/OBJ/GLB, scelta risoluzione | il file si apre in un programma esterno (Blender, slicer) |
 | 6 | **Integrazione** | "Salva come oggetto": il modello entra nel catalogo di Spazio e Planimetria come oggetto personalizzato (ingombro = bounding box, mesh rigenerata dall'SDF) | un modello creato si posiziona e collide come gli altri oggetti |
 | 7 | **Rifinitura** | limiti e prestazioni, mobile, traduzioni, test | build pulita, test verdi |

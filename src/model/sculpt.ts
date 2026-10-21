@@ -23,6 +23,9 @@ export type SculptShape = z.infer<typeof SculptShapeSchema>
 export const SculptOpSchema = z.enum(['add', 'subtract', 'intersect'])
 export type SculptOp = z.infer<typeof SculptOpSchema>
 
+export const SculptMaterialSchema = z.enum(['matte', 'glossy', 'metal', 'clay'])
+export type SculptMaterial = z.infer<typeof SculptMaterialSchema>
+
 export const SculptNodeSchema = z.object({
   id: z.string(),
   /** gruppo che contiene il nodo; null = radice */
@@ -39,13 +42,21 @@ export const SculptNodeSchema = z.object({
   /** dimensioni della forma; per i gruppi è un fattore di scala dei figli */
   size: z.tuple([z.number().positive(), z.number().positive(), z.number().positive()]).default([0.2, 0.2, 0.2]),
   color: z.string().default('#f2d43d'),
+  /** finitura della forma; null = quella del modello */
+  material: SculptMaterialSchema.nullable().default(null),
+  /**
+   * specchia la forma sugli assi del mondo (piani passanti per l'origine): la forma compare anche
+   * dalla parte opposta, come lo "specchio" di Womp
+   */
+  mirror: z
+    .object({ x: z.boolean().default(false), y: z.boolean().default(false), z: z.boolean().default(false) })
+    .default({ x: false, y: false, z: false }),
+  /** guscio: spessore della parete (0 = pieno); svuota la forma, utile per tazze e vasi */
+  shell: z.number().min(0).default(0),
   hidden: z.boolean().default(false),
   locked: z.boolean().default(false),
 })
 export type SculptNode = z.infer<typeof SculptNodeSchema>
-
-export const SculptMaterialSchema = z.enum(['matte', 'glossy', 'metal', 'clay'])
-export type SculptMaterial = z.infer<typeof SculptMaterialSchema>
 
 export const SculptDocSchema = z.object({
   nodes: z.array(SculptNodeSchema).default([]),

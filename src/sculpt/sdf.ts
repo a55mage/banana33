@@ -108,33 +108,50 @@ export function sdShape(kind: ShapeKind, p: V3, s: V3, round: number): number {
 
 // ---------- operazioni morbide (con colore) ----------
 
+/** Finitura: [intensità del riflesso, lucentezza / 200, metallicità, diffusione "argilla"] */
+export type Mat = [number, number, number, number]
+
+export const MATERIAL_PARAMS: Record<'matte' | 'glossy' | 'metal' | 'clay', Mat> = {
+  matte: [0.05, 18 / 200, 0, 0],
+  glossy: [0.6, 140 / 200, 0, 0],
+  metal: [1, 60 / 200, 1, 0],
+  clay: [0, 18 / 200, 0, 1],
+}
+
 export interface Sample {
   d: number
   c: RGB
+  m: Mat
 }
 
 const mixRGB = (a: RGB, b: RGB, t: number): RGB => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)]
+const mixMat = (a: Mat, b: Mat, t: number): Mat => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t), mix(a[3], b[3], t)]
 const K_MIN = 1e-5
+
+/** Guscio: la forma diventa una parete di spessore t, con la superficie esterna invariata */
+export function opShell(d: number, t: number): number {
+  return t > 0 ? Math.abs(d + t / 2) - t / 2 : d
+}
 
 /** Unione morbida: `k` è il raggio della fusione ("goop") */
 export function opUnion(a: Sample, b: Sample, k: number): Sample {
   k = Math.max(k, K_MIN)
   const h = clamp(0.5 + (0.5 * (b.d - a.d)) / k, 0, 1)
-  return { d: mix(b.d, a.d, h) - k * h * (1 - h), c: mixRGB(b.c, a.c, h) }
+  return { d: mix(b.d, a.d, h) - k * h * (1 - h), c: mixRGB(b.c, a.c, h), m: mixMat(b.m, a.m, h) }
 }
 
 /** Sottrazione morbida: `b` scava `a`; la superficie scavata prende il colore di `b` */
 export function opSubtract(a: Sample, b: Sample, k: number): Sample {
   k = Math.max(k, K_MIN)
   const h = clamp(0.5 - (0.5 * (a.d + b.d)) / k, 0, 1)
-  return { d: mix(a.d, -b.d, h) + k * h * (1 - h), c: mixRGB(a.c, b.c, h) }
+  return { d: mix(a.d, -b.d, h) + k * h * (1 - h), c: mixRGB(a.c, b.c, h), m: mixMat(a.m, b.m, h) }
 }
 
 /** Intersezione morbida: resta solo la parte comune */
 export function opIntersect(a: Sample, b: Sample, k: number): Sample {
   k = Math.max(k, K_MIN)
   const h = clamp(0.5 - (0.5 * (b.d - a.d)) / k, 0, 1)
-  return { d: mix(b.d, a.d, h) + k * h * (1 - h), c: mixRGB(b.c, a.c, h) }
+  return { d: mix(b.d, a.d, h) + k * h * (1 - h), c: mixRGB(b.c, a.c, h), m: mixMat(b.m, a.m, h) }
 }
 
 /** Distanza "infinita" iniziale di un gruppo vuoto */

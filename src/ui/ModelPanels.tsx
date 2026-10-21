@@ -28,10 +28,12 @@ import {
   duplicateNodes,
   groupNodes,
   moveNode,
+  pickNode,
   setSculptMaterial,
   toggleSymmetry,
   ungroupNode,
   updateNode,
+  updateNodes,
 } from '../store/sculptActions'
 import { childrenOf, type SculptDoc, type SculptMaterial, type SculptNode, type SculptOp, type SculptShape, type Vec3 } from '../model/sculpt'
 import { useT } from '../i18n'
@@ -52,8 +54,6 @@ export const OP_ICONS: Record<SculptOp, IconSource> = { add: faPlus, subtract: f
 const SHAPES: SculptShape[] = ['sphere', 'box', 'cylinder', 'cone', 'torus', 'capsule']
 const MATERIALS: SculptMaterial[] = ['matte', 'glossy', 'metal', 'clay']
 const MIME = 'application/x-banana33-node'
-
-const selectNode = (id: string) => useUi.getState().setSelection({ type: 'node', id })
 
 function PaletteSection() {
   const t = useT()
@@ -78,7 +78,8 @@ type Drop = { kind: 'before' | 'into'; id: string } | { kind: 'end' } | null
 function LayersSection({ doc }: { doc: SculptDoc }) {
   const t = useT()
   const selection = useUi((s) => s.selection)
-  const selectedId = selection?.type === 'node' ? selection.id : null
+  const selectedIds = selection?.type === 'node' ? [selection.id] : selection?.type === 'nodes' ? selection.ids : []
+  const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
   const [drop, setDrop] = useState<Drop>(null)
 
   const over = (target: Exclude<Drop, null>) => (e: DragEvent) => {
@@ -103,7 +104,7 @@ function LayersSection({ doc }: { doc: SculptDoc }) {
 
   const row = (n: SculptNode, depth: number): React.ReactNode => {
     const isGroup = n.kind === 'group'
-    const cls = ['layer', selectedId === n.id && 'active', n.hidden && 'hidden', drop && 'id' in drop && drop.id === n.id && `drop-${drop.kind}`]
+    const cls = ['layer', selectedIds.includes(n.id) && 'active', n.hidden && 'hidden', drop && 'id' in drop && drop.id === n.id && `drop-${drop.kind}`]
     return (
       <li key={n.id}>
         <div
@@ -117,7 +118,7 @@ function LayersSection({ doc }: { doc: SculptDoc }) {
           onDragEnd={() => setDrop(null)}
           onDragOver={over({ kind: isGroup ? 'into' : 'before', id: n.id })}
           onDrop={onDrop({ kind: isGroup ? 'into' : 'before', id: n.id })}
-          onClick={() => selectNode(n.id)}
+          onClick={(e) => pickNode(n.id, e.ctrlKey || e.metaKey || e.shiftKey)}
         >
           <span className="grip" aria-hidden="true">
             <Icon icon={faGripVertical} />
@@ -180,6 +181,7 @@ function LayersSection({ doc }: { doc: SculptDoc }) {
 
 function SettingsSection({ doc }: { doc: SculptDoc }) {
   const t = useT()
+  const showCutters = useUi((s) => s.showCutters)
   return (
     <section>
       <h3>{t.sculpt.settings}</h3>
@@ -199,6 +201,10 @@ function SettingsSection({ doc }: { doc: SculptDoc }) {
           </button>
         ))}
       </div>
+      <label className="inline">
+        <input type="checkbox" checked={showCutters} onChange={(e) => useUi.getState().setShowCutters(e.target.checked)} />
+        {t.sculpt.showCutters}
+      </label>
     </section>
   )
 }
@@ -243,12 +249,77 @@ function SliderField({ label, value, max, onChange, disabled }: { label: string;
 
 const normDeg = (v: number) => ((v % 360) + 360) % 360
 
+/** Finitura della forma: quella del modello o una propria */
+function FinishPicker({ value, onChange }: { value: SculptMaterial | null; onChange: (m: SculptMaterial | null) => void }) {
+  const t = useT()
+  return (
+    <>
+      <span className="field-label">{t.sculpt.finish}</span>
+      <div className="segmented wide finish">
+        <button className={value === null ? 'active' : ''} aria-pressed={value === null} onClick={() => onChange(null)}>
+          {t.sculpt.finishInherit}
+        </button>
+        {MATERIALS.map((m) => (
+          <button key={m} className={value === m ? 'active' : ''} aria-pressed={value === m} onClick={() => onChange(m)}>
+            {t.sculpt.materials[m]}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** Più forme selezionate: operazione, colore e finitura per tutte, raggruppa, duplica, elimina */
+function MultiInspector({ doc, ids }: { doc: SculptDoc; ids: string[] }) {
+  const t = useT()
+  const nodes = doc.nodes.filter((n) => ids.includes(n.id))
+  const sameParent = nodes.every((n) => n.parentId === nodes[0]?.parentId)
+  const common = <K extends keyof SculptNode>(key: K) => (nodes.every((n) => n[key] === nodes[0][key]) ? nodes[0][key] : undefined)
+  const op = common('op')
+  const material = common('material')
+  const shapes = nodes.filter((n) => n.kind !== 'group')
+  return (
+    <section>
+      <h3>{t.sculpt.multi(nodes.length)}</h3>
+      <span className="field-label">{t.sculpt.op}</span>
+      <div className="segmented wide">
+        {(['add', 'subtract', 'intersect'] as const).map((o) => (
+          <button key={o} className={op === o ? 'active' : ''} aria-pressed={op === o} onClick={() => updateNodes(ids, { op: o })} title={`${t.sculpt.ops[o]} (${t.sculpt.opKeys[o]})`}>
+            <Icon icon={OP_ICONS[o]} /> {t.sculpt.ops[o]}
+          </button>
+        ))}
+      </div>
+      {shapes.length > 0 && (
+        <>
+          <label className="field">
+            <span>{t.props.color}</span>
+            <input type="color" value={shapes[0].color} onChange={(e) => updateNodes(shapes.map((n) => n.id), { color: e.target.value })} />
+          </label>
+          <FinishPicker value={material === undefined ? null : material} onChange={(m) => updateNodes(shapes.map((n) => n.id), { material: m })} />
+        </>
+      )}
+      <div className="actions">
+        <button onClick={() => duplicateNodes(ids)} title={`${t.props.duplicate} (Ctrl+D)`}>
+          <Icon icon={faClone} /> {t.props.duplicate}
+        </button>
+        <button disabled={!sameParent} onClick={() => groupNodes(ids)} title={sameParent ? `${t.sculpt.group} (Ctrl+G)` : t.sculpt.sameLevel}>
+          <Icon icon={faFolderPlus} /> {t.sculpt.group}
+        </button>
+        <button className="danger" onClick={() => deleteNodes(ids)} title={`${t.props.delete} (Del)`}>
+          <Icon icon={faTrashCan} /> {t.props.delete}
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export function NodeInspector() {
   const t = useT()
   const doc = useProject((s) => s.project.sculpt)
   const selection = useUi((s) => s.selection)
   const node = doc && selection?.type === 'node' ? doc.nodes.find((n) => n.id === selection.id) : undefined
   if (!doc) return null
+  if (selection?.type === 'nodes') return <MultiInspector doc={doc} ids={selection.ids} />
   if (!node) {
     return (
       <section>
@@ -289,11 +360,32 @@ export function NodeInspector() {
       <SliderField label={t.sculpt.blend} value={node.blend} max={0.15} onChange={(v) => set({ blend: v }, false)} />
       {canRound && <SliderField label={t.sculpt.round} value={Math.min(node.round, roundMax)} max={roundMax} onChange={(v) => set({ round: v }, false)} />}
 
+      <SliderField label={t.sculpt.shell} value={node.shell} max={Math.max(0.005, Math.min(...node.size) / 2)} onChange={(v) => set({ shell: v }, false)} />
+
       {!isGroup && (
-        <label className="field">
-          <span>{t.props.color}</span>
-          <input type="color" value={node.color} onChange={(e) => set({ color: e.target.value })} />
-        </label>
+        <>
+          <label className="field">
+            <span>{t.props.color}</span>
+            <input type="color" value={node.color} onChange={(e) => set({ color: e.target.value })} />
+          </label>
+          <FinishPicker value={node.material} onChange={(material) => set({ material })} />
+          <span className="field-label" title={t.sculpt.mirrorHint}>
+            {t.sculpt.mirror}
+          </span>
+          <div className="segmented wide">
+            {(['x', 'y', 'z'] as const).map((a) => (
+              <button
+                key={a}
+                className={node.mirror[a] ? 'active' : ''}
+                aria-pressed={node.mirror[a]}
+                title={t.sculpt.mirrorHint}
+                onClick={() => set({ mirror: { ...node.mirror, [a]: !node.mirror[a] } })}
+              >
+                {a.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       <h4>{isGroup ? t.sculpt.scale : t.props.dimensions}</h4>

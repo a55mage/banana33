@@ -35,6 +35,35 @@ function editSculpt(fn: (doc: Draft<SculptDoc>) => void, history = true) {
 
 const selectNode = (id: string | null) => useUi.getState().setSelection(id ? { type: 'node', id } : null)
 
+/** Nodi selezionati nel modello (uno o più) */
+export function selectedNodeIds(): string[] {
+  const sel = useUi.getState().selection
+  return sel?.type === 'node' ? [sel.id] : sel?.type === 'nodes' ? sel.ids : []
+}
+
+function setNodeSelection(ids: string[]) {
+  useUi.getState().setSelection(ids.length === 0 ? null : ids.length === 1 ? { type: 'node', id: ids[0] } : { type: 'nodes', ids })
+}
+
+/** Selezione di una forma; con `additive` (Ctrl/Shift) la aggiunge o la toglie dalla selezione */
+export function pickNode(id: string, additive = false) {
+  if (!additive) return setNodeSelection([id])
+  const cur = selectedNodeIds()
+  setNodeSelection(cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id])
+}
+
+export function selectAllNodes() {
+  const doc = currentSculpt()
+  if (doc) setNodeSelection(doc.nodes.filter((n) => n.parentId === null).map((n) => n.id))
+}
+
+/** Stessa modifica a più nodi, in un solo passo di annulla */
+export function updateNodes(ids: string[], patch: Partial<SculptNode>) {
+  editSculpt((d) => {
+    for (const n of d.nodes) if (ids.includes(n.id)) Object.assign(n, patch)
+  })
+}
+
 /** Gruppo in cui inserire una nuova forma: il gruppo selezionato o quello del nodo selezionato */
 function insertionParent(doc: SculptDoc): string | null {
   const sel = useUi.getState().selection
@@ -72,8 +101,7 @@ export function deleteNodes(ids: string[]) {
   editSculpt((d) => {
     d.nodes = d.nodes.filter((n) => !gone.has(n.id))
   })
-  const sel = useUi.getState().selection
-  if (sel?.type === 'node' && gone.has(sel.id)) selectNode(null)
+  setNodeSelection(selectedNodeIds().filter((id) => !gone.has(id)))
 }
 
 /** Duplica i nodi (con i loro figli), spostando la copia di 5 cm su X subito dopo l'originale */
@@ -101,7 +129,7 @@ export function duplicateNodes(ids: string[]): string[] {
       copies.push(map.get(rootId)!)
     }
   })
-  if (copies.length) selectNode(copies[copies.length - 1])
+  if (copies.length) setNodeSelection(copies)
   return copies
 }
 

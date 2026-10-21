@@ -11,7 +11,7 @@ import {
   selectedObjectIds,
 } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
-import { deleteNodes, duplicateNodes, groupNodes, ungroupNode, updateNode } from '../store/sculptActions'
+import { deleteNodes, duplicateNodes, groupNodes, selectAllNodes, selectedNodeIds, ungroupNode, updateNode, updateNodes } from '../store/sculptActions'
 import type { SculptOp } from '../model/sculpt'
 
 // L'elenco delle scorciatoie mostrato nell'aiuto è tradotto in i18n.ts (help.groups)
@@ -25,21 +25,25 @@ const ARROWS: Record<string, [number, number]> = {
 
 /** Scorciatoie della modalità Modello 3D sulla forma selezionata; restituisce true se il tasto è stato gestito */
 function handleModelShortcut(e: KeyboardEvent, k: string, ctrl: boolean, run: (fn: () => void) => void): boolean {
-  const sel = useUi.getState().selection
   const doc = useProject.getState().project.sculpt
-  const node = sel?.type === 'node' ? doc?.nodes.find((n) => n.id === sel.id) : undefined
+  const ids = selectedNodeIds()
+  const nodes = doc?.nodes.filter((n) => ids.includes(n.id)) ?? []
+  const node = nodes.length === 1 ? nodes[0] : undefined
   if (ctrl) {
-    if (k === 'd' && node) run(() => duplicateNodes([node.id]))
-    else if (k === 'g' && node) run(() => (e.shiftKey ? node.kind === 'group' && ungroupNode(node.id) : groupNodes([node.id])))
-    else if (k === 'a') e.preventDefault()
+    if (k === 'd' && nodes.length) run(() => duplicateNodes(ids))
+    else if (k === 'g' && e.shiftKey && node?.kind === 'group') run(() => ungroupNode(node.id))
+    else if (k === 'g' && !e.shiftKey && nodes.length) run(() => void groupNodes(ids))
+    else if (k === 'a') run(selectAllNodes)
     else return false
     return true
   }
-  if (!node || e.altKey) return false
+  if (nodes.length === 0 || e.altKey) return false
   const step = (useUi.getState().snap || 0.01) * (e.shiftKey ? 10 : 1)
   const nudge = (dx: number, dy: number, dz: number) => {
-    if (node.locked) return
-    updateNode(node.id, { position: [node.position[0] + dx, node.position[1] + dy, node.position[2] + dz] })
+    useProject.getState().checkpoint()
+    for (const n of nodes) {
+      if (!n.locked) updateNode(n.id, { position: [n.position[0] + dx, n.position[1] + dy, n.position[2] + dz] }, false)
+    }
   }
   if (e.key in ARROWS) {
     const [dx, dz] = ARROWS[e.key]
@@ -55,16 +59,16 @@ function handleModelShortcut(e: KeyboardEvent, k: string, ctrl: boolean, run: (f
       return true
     case 'Delete':
     case 'Backspace':
-      run(() => deleteNodes([node.id]))
+      run(() => deleteNodes(ids))
       return true
   }
   const ops: Record<string, SculptOp> = { a: 'add', s: 'subtract', i: 'intersect' }
   if (k in ops) {
-    run(() => updateNode(node.id, { op: ops[k] }))
+    run(() => updateNodes(ids, { op: ops[k] }))
     return true
   }
   if (k === 'h') {
-    run(() => updateNode(node.id, { hidden: !node.hidden }))
+    run(() => updateNodes(ids, { hidden: !nodes.every((n) => n.hidden) }))
     return true
   }
   return false
