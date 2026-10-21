@@ -5,7 +5,7 @@ export type Lang = 'it' | 'en'
 const it = {
   locale: 'it-IT',
   app: { projectName: 'Nome progetto', invalidFile: (msg: string) => `File non valido: ${msg}` },
-  project: { newSpace: 'Nuovo spazio', newPlan: 'Nuova planimetria', copy: 'copia', sample: 'Stanza di esempio' },
+  project: { newSpace: 'Nuovo spazio', newPlan: 'Nuova planimetria', copy: 'copia', sample: 'Stanza di esempio', newModel: 'Nuovo modello' },
   toolbar: {
     project: 'Progetto',
     newProject: 'Nuovo progetto…',
@@ -33,6 +33,10 @@ const it = {
     wallMode: { up: 'Muri alti', cutaway: 'Muri ritagliati verso la camera', down: 'Muri bassi' },
     wallModeHint: '(H per cambiare)',
     gizmo: { none: 'Nessun manipolatore (Q)', translate: 'Sposta (W)', rotate: 'Ruota (E)', scale: 'Scala (R)' },
+  },
+  sculpt: {
+    shapes: { group: 'Gruppo', sphere: 'Sfera', box: 'Cubo', cylinder: 'Cilindro', cone: 'Cono', torus: 'Toro', capsule: 'Capsula' },
+    sample: { stem: 'Gambo', cap: 'Cappello', gills: 'Sottocappello', spots: 'Macchie', spot: 'Macchia' },
   },
   newProject: {
     title: 'Nuovo progetto',
@@ -283,7 +287,7 @@ export type Dict = typeof it
 const en: Dict = {
   locale: 'en-GB',
   app: { projectName: 'Project name', invalidFile: (msg) => `Invalid file: ${msg}` },
-  project: { newSpace: 'New space', newPlan: 'New floor plan', copy: 'copy', sample: 'Sample room' },
+  project: { newSpace: 'New space', newPlan: 'New floor plan', copy: 'copy', sample: 'Sample room', newModel: 'New model' },
   toolbar: {
     project: 'Project',
     newProject: 'New project…',
@@ -311,6 +315,10 @@ const en: Dict = {
     wallMode: { up: 'Walls up', cutaway: 'Walls cut away towards the camera', down: 'Walls down' },
     wallModeHint: '(H to change)',
     gizmo: { none: 'No gizmo (Q)', translate: 'Move (W)', rotate: 'Rotate (E)', scale: 'Scale (R)' },
+  },
+  sculpt: {
+    shapes: { group: 'Group', sphere: 'Sphere', box: 'Cube', cylinder: 'Cylinder', cone: 'Cone', torus: 'Torus', capsule: 'Capsule' },
+    sample: { stem: 'Stem', cap: 'Cap', gills: 'Gills', spots: 'Spots', spot: 'Spot' },
   },
   newProject: {
     title: 'New project',

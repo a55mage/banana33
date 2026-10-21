@@ -19,6 +19,8 @@ function readShowCollisions() {
 
 export type Selection =
   | { type: 'object' | 'wall' | 'opening' | 'group'; id: string }
+  /** forma o gruppo di un modello 3D */
+  | { type: 'node'; id: string }
   /** più oggetti selezionati con Ctrl/Shift (non ancora raggruppati) */
   | { type: 'multi'; ids: string[] }
   | null

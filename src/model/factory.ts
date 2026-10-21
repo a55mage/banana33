@@ -1,8 +1,33 @@
 import { nanoid } from 'nanoid'
 import type { OpeningKind, PrimitiveKind, Project, SceneObject, ProjectKind } from './schema'
 import { getT, type Dict } from '../i18n'
+import { newSculptNode, SculptDocSchema, type SculptDoc } from './sculpt'
 
-export type ProjectTemplate = Exclude<ProjectKind, 'model'>
+export type ProjectTemplate = ProjectKind
+
+/**
+ * Modello di partenza: un fungo. Mostra le operazioni di base: gambo e cappello fusi (goop),
+ * il sottocappello scavato e un gruppo di macchie aggiunte sopra.
+ */
+export function sampleSculpt(): SculptDoc {
+  const t = getT().sculpt
+  const spots = newSculptNode('group', { name: t.sample.spots })
+  const spot = (x: number, z: number, y: number, d: number) =>
+    newSculptNode('sphere', { name: t.sample.spot, parentId: spots.id, position: [x, y, z], size: [d, d * 0.6, d], color: '#fff8ec', blend: 0.004 })
+  return SculptDocSchema.parse({
+    material: 'glossy',
+    nodes: [
+      newSculptNode('capsule', { name: t.sample.stem, position: [0, 0.09, 0], size: [0.08, 0.18, 0.08], color: '#efe2c4' }),
+      newSculptNode('sphere', { name: t.sample.cap, position: [0, 0.19, 0], size: [0.28, 0.14, 0.28], color: '#d6423f', blend: 0.03 }),
+      newSculptNode('sphere', { name: t.sample.gills, op: 'subtract', position: [0, 0.13, 0], size: [0.24, 0.07, 0.24], color: '#efe2c4', blend: 0.015 }),
+      spots,
+      spot(0.06, 0.02, 0.245, 0.05),
+      spot(-0.05, 0.05, 0.24, 0.04),
+      spot(-0.02, -0.07, 0.235, 0.045),
+      spot(0.0, 0.0, 0.262, 0.035),
+    ],
+  })
+}
 
 export function newProject(template: ProjectTemplate): Project {
   const now = Date.now()
@@ -10,11 +35,12 @@ export function newProject(template: ProjectTemplate): Project {
     schemaVersion: 1,
     kind: template,
     id: nanoid(),
-    name: template === 'space' ? getT().project.newSpace : getT().project.newPlan,
+    name: template === 'space' ? getT().project.newSpace : template === 'plan' ? getT().project.newPlan : getT().project.newModel,
     createdAt: now,
     updatedAt: now,
     unit: 'cm',
     space: template === 'space' ? { width: 4, depth: 3, height: 2.7 } : null,
+    sculpt: template === 'model' ? sampleSculpt() : null,
     walls: [],
     openings: [],
     objects: [],

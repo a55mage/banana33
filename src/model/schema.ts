@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { SculptDocSchema } from './sculpt'
 
 // Unità: metri. Piano XZ (Y verso l'alto), angoli in gradi.
 export const Vec2Schema = z.tuple([z.number(), z.number()])
@@ -78,8 +79,10 @@ function migrateProject(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object') return raw
   const p = raw as Record<string, unknown>
   const kind = p.kind ?? (p.space ? 'space' : 'plan')
-  const space = kind === 'space' ? (p.space ?? DEFAULT_SPACE) : kind === 'plan' ? null : (p.space ?? null)
-  return { ...p, kind, space }
+  const space = kind === 'space' ? (p.space ?? DEFAULT_SPACE) : null
+  // solo i modelli 3D hanno il documento delle forme
+  const sculpt = kind === 'model' ? (p.sculpt ?? {}) : null
+  return { ...p, kind, space, sculpt }
 }
 
 const ProjectObjectSchema = z.object({
@@ -96,6 +99,8 @@ const ProjectObjectSchema = z.object({
   openings: z.array(OpeningSchema),
   objects: z.array(SceneObjectSchema),
   groups: z.array(GroupSchema).default([]),
+  /** forme del modello 3D (solo per kind === 'model') */
+  sculpt: SculptDocSchema.nullable().default(null),
 })
 
 export const ProjectSchema = z.preprocess(migrateProject, ProjectObjectSchema)
