@@ -13,12 +13,20 @@ import { SpaceBox } from './SpaceBox'
 import { Gizmo, gizmoBusy } from './Gizmo'
 import { GRID, UNITS, useUnit } from '../units'
 import { useSceneTheme } from '../theme'
+import { SculptView } from './SculptView'
+import { compileSculpt } from '../sculpt/compile'
 
 const ENDPOINT_SNAP = 0.15
 
-/** Area da inquadrare: lo spazio contenitore, altrimenti muri e oggetti */
-function sceneExtent(view: '2d' | '3d') {
+/** Area da inquadrare: lo spazio contenitore, altrimenti muri e oggetti; per i modelli 3D il loro ingombro */
+function sceneExtent(view: '2d' | '3d'): { center: Vec2; size: number; targetY?: number } {
   const p = useProject.getState().project
+  if (p.kind === 'model') {
+    const b = p.sculpt ? compileSculpt(p.sculpt).bounds : null
+    if (!b) return { center: [0, 0], size: 0.5, targetY: 0.1 }
+    const size = Math.max(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2])
+    return { center: [(b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2], size: Math.max(size * 1.1, 0.15), targetY: (b.min[1] + b.max[1]) / 2 }
+  }
   let b = layoutBounds(p)
   let height = p.space?.height ?? Math.max(0, ...p.walls.map((w) => w.height))
   if (!p.space) {
@@ -44,11 +52,12 @@ function Cameras() {
   const drag = useUi((s) => s.drag)
   const fitNonce = useUi((s) => s.fitNonce)
   const projectId = useProject((s) => s.project.id)
+  const kind = useProject((s) => s.project.kind)
   const viewport = useThree((s) => s.size)
   // reinquadra solo cambiando vista o progetto, o su richiesta ("Centra vista")
   const frame = useMemo(() => {
-    const { center, size } = sceneExtent(view)
-    return { center, size, zoom: Math.min(viewport.width, viewport.height) / (size * 1.4) }
+    const { center, size, targetY = 0 } = sceneExtent(view)
+    return { center, size, targetY, zoom: Math.min(viewport.width, viewport.height) / (size * 1.4) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, projectId, fitNonce])
   const [cx, cz] = frame.center
@@ -60,12 +69,24 @@ function Cameras() {
       {view === '2d' ? (
         <OrthographicCamera key={`cam-${key}`} makeDefault position={[cx, 50, cz + 0.001]} zoom={frame.zoom} near={0.1} far={200} />
       ) : (
-        <PerspectiveCamera key={`cam-${key}`} makeDefault position={[cx + size * 0.7, size * 1.6, cz + size * 1.2]} fov={45} near={Math.min(0.1, size / 50)} far={300} />
+        <PerspectiveCamera
+          key={`cam-${key}`}
+          makeDefault
+          // i modelli si guardano più di fronte; stanze e spazi dall'alto, per vedere dentro
+          position={
+            kind === 'model'
+              ? [cx + size * 1.0, frame.targetY + size * 0.75, cz + size * 1.5]
+              : [cx + size * 0.7, frame.targetY + size * 1.6, cz + size * 1.2]
+          }
+          fov={45}
+          near={Math.min(0.1, size / 50)}
+          far={300}
+        />
       )}
       <OrbitControls
         key={`ctl-${key}`}
         makeDefault
-        target={[cx, 0, cz]}
+        target={[cx, frame.targetY, cz]}
         enabled={!drag}
         enableRotate={view === '3d'}
         screenSpacePanning
@@ -150,7 +171,11 @@ function Ground() {
 
 export function Viewport() {
   const view = useUi((s) => s.view)
-  const grid = GRID[UNITS[useUnit()].system]
+  const kind = useProject((s) => s.project.kind)
+  const model = kind === 'model'
+  // i modelli 3D sono piccoli: griglia più fine (non troppo, per evitare il moiré in lontananza)
+  const baseGrid = GRID[UNITS[useUnit()].system]
+  const grid = model ? { cell: baseGrid.cell / 2, section: baseGrid.section / 10 } : baseGrid
   const theme = useSceneTheme()
 
   useEffect(() => {
@@ -173,7 +198,7 @@ export function Viewport() {
         sectionSize={grid.section}
         cellColor={theme.gridCell}
         sectionColor={theme.gridSection}
-        fadeDistance={view === '2d' ? 150 : 45}
+        fadeDistance={view === '2d' ? 150 : model ? 6 : 45}
         fadeStrength={1.5}
         infiniteGrid
       />
@@ -182,11 +207,17 @@ export function Viewport() {
         <shadowMaterial opacity={theme.shadowOpacity} depthWrite={false} />
       </mesh>
       <Ground />
-      <SpaceBox />
-      <Walls />
-      <WallDraft />
-      <SceneObjects />
-      <Gizmo />
+      {model ? (
+        <SculptView />
+      ) : (
+        <>
+          <SpaceBox />
+          <Walls />
+          <WallDraft />
+          <SceneObjects />
+          <Gizmo />
+        </>
+      )}
     </Canvas>
   )
 }

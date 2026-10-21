@@ -90,7 +90,7 @@ export function handleShortcut(e: KeyboardEvent) {
     case 'h':
       return ui.cycleWallMode()
     case '2':
-      return ui.setView('2d')
+      return useProject.getState().project.kind === 'model' ? undefined : ui.setView('2d')
     case '3':
       return ui.setView('3d')
     case 'v':

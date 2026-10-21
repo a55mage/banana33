@@ -91,6 +91,8 @@ export function Toolbar() {
   const snap = useUi((s) => s.snap)
   const showCollisions = useUi((s) => s.showCollisions)
   const gizmo = useUi((s) => s.gizmo)
+  const kind = useProject((s) => s.project.kind)
+  const model = kind === 'model'
   const wallMode = useUi((s) => s.wallMode)
   const unit = useUnit()
   const snaps = SNAP_STEPS[UNITS[unit].system]
@@ -208,29 +210,34 @@ export function Toolbar() {
       </div>
 
       <div className="group">
-        <div className="segmented">
-          <button className={view === '2d' ? 'active' : ''} onClick={() => setView('2d')} title="2D (2)">
-            <Icon icon={faMap} /> 2D
-          </button>
-          <button className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')} title="3D (3)">
-            <Icon icon={faCube} /> 3D
-          </button>
-        </div>
-        <div className="segmented" role="group" aria-label="Gizmo">
-          {GIZMOS.map((g) => (
-            <button
-              key={g.id}
-              className={`icon-btn${gizmo === g.id ? ' active' : ''}`}
-              aria-pressed={gizmo === g.id}
-              onClick={() => useUi.getState().setGizmo(g.id)}
-              title={t.toolbar.gizmo[g.id]}
-              aria-label={t.toolbar.gizmo[g.id]}
-            >
-              <Icon icon={g.icon} />
+        {/* i modelli 3D hanno solo la vista 3D; manipolatore e collisioni riguardano gli oggetti */}
+        {!model && (
+          <div className="segmented">
+            <button className={view === '2d' ? 'active' : ''} onClick={() => setView('2d')} title="2D (2)">
+              <Icon icon={faMap} /> 2D
             </button>
-          ))}
-        </div>
-        {view === '3d' && (
+            <button className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')} title="3D (3)">
+              <Icon icon={faCube} /> 3D
+            </button>
+          </div>
+        )}
+        {!model && (
+          <div className="segmented" role="group" aria-label="Gizmo">
+            {GIZMOS.map((g) => (
+              <button
+                key={g.id}
+                className={`icon-btn${gizmo === g.id ? ' active' : ''}`}
+                aria-pressed={gizmo === g.id}
+                onClick={() => useUi.getState().setGizmo(g.id)}
+                title={t.toolbar.gizmo[g.id]}
+                aria-label={t.toolbar.gizmo[g.id]}
+              >
+                <Icon icon={g.icon} />
+              </button>
+            ))}
+          </div>
+        )}
+        {view === '3d' && kind === 'plan' && (
           <div className="segmented" role="group" aria-label={t.toolbar.walls}>
             {WALL_MODES.map((m) => (
               <button
@@ -249,14 +256,16 @@ export function Toolbar() {
         <button onClick={() => useUi.getState().requestFit()} title={t.toolbar.centerTitle}>
           <Icon icon={faCrosshairs} /> {t.toolbar.center}
         </button>
-        <button
-          className={`toggle${showCollisions ? ' on' : ''}`}
-          aria-pressed={showCollisions}
-          onClick={() => useUi.getState().toggleCollisions()}
-          title={t.toolbar.collisionsTitle(showCollisions)}
-        >
-          <Icon icon={faTriangleExclamation} /> {t.toolbar.collisions}
-        </button>
+        {!model && (
+          <button
+            className={`toggle${showCollisions ? ' on' : ''}`}
+            aria-pressed={showCollisions}
+            onClick={() => useUi.getState().toggleCollisions()}
+            title={t.toolbar.collisionsTitle(showCollisions)}
+          >
+            <Icon icon={faTriangleExclamation} /> {t.toolbar.collisions}
+          </button>
+        )}
       </div>
 
       <div className="group end">

@@ -341,6 +341,8 @@ export function PropertiesPanel() {
     }
   }
 
+  // nei modelli 3D l'inspector delle forme arriva con la fase successiva
+  if (project.kind === 'model') return <aside className="panel right" />
   return (
     <aside className="panel right">
       <section>

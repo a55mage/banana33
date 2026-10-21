@@ -13,9 +13,6 @@ export const KIND_ICONS: Record<ProjectKind, IconSource> = {
   model: faCubes,
 }
 
-/** La modellazione 3D arriva con le fasi successive del piano */
-const AVAILABLE: Record<ProjectKind, boolean> = { space: true, plan: true, model: false }
-
 /** Scelta del tipo di progetto: una volta creato, il tipo non cambia più */
 export function NewProjectDialog() {
   const t = useT()
@@ -29,7 +26,6 @@ export function NewProjectDialog() {
   if (!show) return null
   const close = () => useUi.getState().setShowNewProject(false)
   const create = (kind: ProjectKind) => {
-    if (kind === 'model') return
     useProject.getState().load(newProject(kind))
     // una planimetria vuota parte direttamente dal disegno dei muri
     if (kind === 'plan') useUi.getState().setTool('wall')
@@ -63,7 +59,6 @@ export function NewProjectDialog() {
               key={kind}
               ref={i === 0 ? first : undefined}
               className="kind-card"
-              disabled={!AVAILABLE[kind]}
               onClick={() => create(kind)}
             >
               <span className="kind-icon">
@@ -71,7 +66,6 @@ export function NewProjectDialog() {
               </span>
               <strong>{t.newProject.kinds[kind].name}</strong>
               <span className="kind-desc">{t.newProject.kinds[kind].desc}</span>
-              {!AVAILABLE[kind] && <span className="badge soon">{t.newProject.comingSoon}</span>}
             </button>
           ))}
         </div>

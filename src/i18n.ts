@@ -35,12 +35,14 @@ const it = {
     gizmo: { none: 'Nessun manipolatore (Q)', translate: 'Sposta (W)', rotate: 'Ruota (E)', scale: 'Scala (R)' },
   },
   sculpt: {
+    title: 'Modello 3D',
+    toolsSoon: 'Forme, livelli e inspector del modello arrivano con la prossima fase. Intanto puoi ruotare la vista e caricare o salvare il progetto.',
+    count: (n: number): string => (n === 1 ? '1 forma' : `${n} forme`),
     shapes: { group: 'Gruppo', sphere: 'Sfera', box: 'Cubo', cylinder: 'Cilindro', cone: 'Cono', torus: 'Toro', capsule: 'Capsula' },
     sample: { stem: 'Gambo', cap: 'Cappello', gills: 'Sottocappello', spots: 'Macchie', spot: 'Macchia' },
   },
   newProject: {
     title: 'Nuovo progetto',
-    comingSoon: 'In arrivo',
     fixedHint: 'Il tipo di progetto si sceglie ora e non si può cambiare in seguito.',
     kinds: {
       space: { name: 'Spazio', desc: 'Un contenitore rettangolare in cui verificare se gli oggetti ci stanno e disporli.' },
@@ -317,12 +319,14 @@ const en: Dict = {
     gizmo: { none: 'No gizmo (Q)', translate: 'Move (W)', rotate: 'Rotate (E)', scale: 'Scale (R)' },
   },
   sculpt: {
+    title: '3D model',
+    toolsSoon: 'Shapes, layers and the model inspector arrive in the next phase. Meanwhile you can orbit the view and load or save the project.',
+    count: (n) => (n === 1 ? '1 shape' : `${n} shapes`),
     shapes: { group: 'Group', sphere: 'Sphere', box: 'Cube', cylinder: 'Cylinder', cone: 'Cone', torus: 'Torus', capsule: 'Capsule' },
     sample: { stem: 'Stem', cap: 'Cap', gills: 'Gills', spots: 'Spots', spot: 'Spot' },
   },
   newProject: {
     title: 'New project',
-    comingSoon: 'Coming soon',
     fixedHint: 'The project type is chosen now and cannot be changed later.',
     kinds: {
       space: { name: 'Space', desc: 'A rectangular container to check whether objects fit and arrange them.' },

@@ -6,8 +6,8 @@ import { newSculptNode, SculptDocSchema, type SculptDoc } from './sculpt'
 export type ProjectTemplate = ProjectKind
 
 /**
- * Modello di partenza: un fungo. Mostra le operazioni di base: gambo e cappello fusi (goop),
- * il sottocappello scavato e un gruppo di macchie aggiunte sopra.
+ * Modello di partenza: un fungo. Mostra le operazioni di base: il sottocappello scava il cappello,
+ * il gambo si fonde (goop) con ciò che resta e un gruppo di macchie è aggiunto sopra.
  */
 export function sampleSculpt(): SculptDoc {
   const t = getT().sculpt
@@ -17,9 +17,10 @@ export function sampleSculpt(): SculptDoc {
   return SculptDocSchema.parse({
     material: 'glossy',
     nodes: [
-      newSculptNode('capsule', { name: t.sample.stem, position: [0, 0.09, 0], size: [0.08, 0.18, 0.08], color: '#efe2c4' }),
-      newSculptNode('sphere', { name: t.sample.cap, position: [0, 0.19, 0], size: [0.28, 0.14, 0.28], color: '#d6423f', blend: 0.03 }),
+      newSculptNode('sphere', { name: t.sample.cap, position: [0, 0.19, 0], size: [0.28, 0.14, 0.28], color: '#d6423f' }),
+      // la sottrazione scava tutto ciò che la precede: il gambo va aggiunto dopo, altrimenti verrebbe tagliato
       newSculptNode('sphere', { name: t.sample.gills, op: 'subtract', position: [0, 0.13, 0], size: [0.24, 0.07, 0.24], color: '#efe2c4', blend: 0.015 }),
+      newSculptNode('capsule', { name: t.sample.stem, position: [0, 0.09, 0], size: [0.08, 0.18, 0.08], color: '#efe2c4', blend: 0.03 }),
       spots,
       spot(0.06, 0.02, 0.245, 0.05),
       spot(-0.05, 0.05, 0.24, 0.04),
