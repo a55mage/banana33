@@ -14,6 +14,7 @@ import { Gizmo, gizmoBusy } from './Gizmo'
 import { GRID, UNITS, useUnit } from '../units'
 import { useSceneTheme } from '../theme'
 import { SculptView } from './SculptView'
+import { SculptGizmo, SculptSelectionGhost } from './SculptSelection'
 import { compileSculpt } from '../sculpt/compile'
 
 const ENDPOINT_SNAP = 0.15
@@ -208,7 +209,11 @@ export function Viewport() {
       </mesh>
       <Ground />
       {model ? (
-        <SculptView />
+        <>
+          <SculptView />
+          <SculptSelectionGhost />
+          <SculptGizmo />
+        </>
       ) : (
         <>
           <SpaceBox />

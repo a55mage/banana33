@@ -6,14 +6,15 @@ interface Props {
   /** valore in metri (o gradi per kind="angle") */
   value: number
   onCommit: (v: number) => void
-  kind?: 'length' | 'angle'
+  kind?: 'length' | 'angle' | 'percent'
   min?: number
 }
 
 /** Campo numerico nell'unità del progetto: accetta la virgola e applica il valore solo a conferma */
 export function NumField({ label, value, onCommit, kind = 'length', min }: Props) {
   const unit = useUnit()
-  const { factor, label: unitLabel, decimals } = kind === 'angle' ? { factor: 1, label: '°', decimals: 1 } : UNITS[unit]
+  const { factor, label: unitLabel, decimals } =
+    kind === 'angle' ? { factor: 1, label: '°', decimals: 1 } : kind === 'percent' ? { factor: 100, label: '%', decimals: 0 } : UNITS[unit]
   const fmt = (v: number) => {
     const k = 10 ** (decimals + 1)
     return String(Math.round(v * factor * k) / k).replace('.', ',')

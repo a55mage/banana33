@@ -1,11 +1,14 @@
 import { useEffect, useMemo } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { BackSide, Color, Matrix4, ShaderMaterial, Vector3, Vector4 } from 'three'
 import { useProject } from '../store/projectStore'
 import { compileSculpt, sculptGLSL, sculptUniforms, type CompiledSculpt } from '../sculpt/compile'
 import { SCULPT_VERTEX, sculptFragment, shadowFragment } from '../sculpt/glsl'
 import { useResolvedTheme } from '../theme'
 import type { SculptMaterial } from '../model/sculpt'
+import { pickSculpt } from '../sculpt/pick'
+import { useUi } from '../store/uiStore'
+import { gizmoBusy } from './Gizmo'
 
 const MATERIAL_INDEX: Record<SculptMaterial, number> = { matte: 0, glossy: 1, metal: 2, clay: 3 }
 /** luce principale: dall'alto, davanti a destra */
@@ -103,6 +106,16 @@ export function SculptView() {
     ;(model.uniforms.uProj.value as Matrix4).copy(camera.projectionMatrix)
   })
 
+  const onPick = (e: ThreeEvent<MouseEvent>) => {
+    const ui = useUi.getState()
+    if (e.delta > 4 || gizmoBusy() || !compiled) return
+    const { origin, direction } = e.ray
+    const hit = pickSculpt(compiled, [origin.x, origin.y, origin.z], [direction.x, direction.y, direction.z])
+    if (!hit) return // nessuna forma: il clic passa al pavimento, che deseleziona
+    e.stopPropagation()
+    ui.setSelection({ type: 'node', id: hit.nodeId })
+  }
+
   const b = compiled?.bounds
   if (!b) return null
   // un margine evita che il raggio entri già a ridosso della superficie
@@ -119,7 +132,8 @@ export function SculptView() {
 
   return (
     <>
-      <mesh position={center} scale={size} material={model} raycast={noRaycast} renderOrder={1}>
+      {/* il parallelepipedo riceve i clic: la forma colpita si trova col ray marching in TypeScript */}
+      <mesh position={center} scale={size} material={model} renderOrder={1} onClick={onPick}>
         <boxGeometry />
       </mesh>
       {/* l'ombra si disegna solo se il modello è (almeno in parte) sopra il pavimento */}

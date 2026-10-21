@@ -11,6 +11,8 @@ import {
   selectedObjectIds,
 } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
+import { deleteNodes, duplicateNodes, groupNodes, ungroupNode, updateNode } from '../store/sculptActions'
+import type { SculptOp } from '../model/sculpt'
 
 // L'elenco delle scorciatoie mostrato nell'aiuto è tradotto in i18n.ts (help.groups)
 
@@ -19,6 +21,53 @@ const ARROWS: Record<string, [number, number]> = {
   ArrowRight: [1, 0],
   ArrowUp: [0, -1],
   ArrowDown: [0, 1],
+}
+
+/** Scorciatoie della modalità Modello 3D sulla forma selezionata; restituisce true se il tasto è stato gestito */
+function handleModelShortcut(e: KeyboardEvent, k: string, ctrl: boolean, run: (fn: () => void) => void): boolean {
+  const sel = useUi.getState().selection
+  const doc = useProject.getState().project.sculpt
+  const node = sel?.type === 'node' ? doc?.nodes.find((n) => n.id === sel.id) : undefined
+  if (ctrl) {
+    if (k === 'd' && node) run(() => duplicateNodes([node.id]))
+    else if (k === 'g' && node) run(() => (e.shiftKey ? node.kind === 'group' && ungroupNode(node.id) : groupNodes([node.id])))
+    else if (k === 'a') e.preventDefault()
+    else return false
+    return true
+  }
+  if (!node || e.altKey) return false
+  const step = (useUi.getState().snap || 0.01) * (e.shiftKey ? 10 : 1)
+  const nudge = (dx: number, dy: number, dz: number) => {
+    if (node.locked) return
+    updateNode(node.id, { position: [node.position[0] + dx, node.position[1] + dy, node.position[2] + dz] })
+  }
+  if (e.key in ARROWS) {
+    const [dx, dz] = ARROWS[e.key]
+    run(() => nudge(dx * step, 0, dz * step))
+    return true
+  }
+  switch (e.key) {
+    case 'PageUp':
+      run(() => nudge(0, step, 0))
+      return true
+    case 'PageDown':
+      run(() => nudge(0, -step, 0))
+      return true
+    case 'Delete':
+    case 'Backspace':
+      run(() => deleteNodes([node.id]))
+      return true
+  }
+  const ops: Record<string, SculptOp> = { a: 'add', s: 'subtract', i: 'intersect' }
+  if (k in ops) {
+    run(() => updateNode(node.id, { op: ops[k] }))
+    return true
+  }
+  if (k === 'h') {
+    run(() => updateNode(node.id, { hidden: !node.hidden }))
+    return true
+  }
+  return false
 }
 
 export function handleShortcut(e: KeyboardEvent) {
@@ -31,6 +80,8 @@ export function handleShortcut(e: KeyboardEvent) {
     e.preventDefault()
     fn()
   }
+
+  if (useProject.getState().project.kind === 'model' && handleModelShortcut(e, k, ctrl, run)) return
 
   if (ctrl) {
     if (k === 'z') run(() => (e.shiftKey ? useProject.getState().redo() : useProject.getState().undo()))

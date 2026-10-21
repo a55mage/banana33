@@ -56,8 +56,11 @@ export const useProject = create<ProjectState>((set, get) => ({
   load: (p) => {
     set({ project: p, past: [], future: [] })
     useUi.getState().resetForProject()
-    // i modelli 3D non hanno una vista in pianta
-    if (p.kind === 'model') useUi.getState().setView('3d')
+    // i modelli 3D non hanno una vista in pianta e sono piccoli: aggancio di 1 cm
+    if (p.kind === 'model') {
+      useUi.getState().setView('3d')
+      useUi.getState().setSnap(0.01)
+    }
   },
 }))
 

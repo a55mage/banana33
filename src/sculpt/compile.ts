@@ -1,5 +1,6 @@
-import { Color, Euler, MathUtils, Matrix4, Quaternion, Vector3 } from 'three'
-import { childrenOf, type SculptDoc, type SculptNode, type SculptOp, type SculptShape } from '../model/sculpt'
+import { Color, Matrix4, Vector3 } from 'three'
+import { localMatrix } from './transform'
+import { childrenOf, type SculptDoc, type SculptOp, type SculptShape } from '../model/sculpt'
 import { FAR, opIntersect, opSubtract, opUnion, sdShape, type RGB, type Sample, type V3 } from './sdf'
 
 /*
@@ -55,13 +56,6 @@ export interface CompiledSculpt {
   bounds: Bounds | null
   /** nodo per indice */
   nodeIds: string[]
-}
-
-const toEuler = (r: V3) => new Euler(MathUtils.degToRad(r[0]), MathUtils.degToRad(r[1]), MathUtils.degToRad(r[2]), 'YXZ')
-
-function localMatrix(n: SculptNode): Matrix4 {
-  const scale = n.kind === 'group' ? new Vector3(...n.size) : new Vector3(1, 1, 1)
-  return new Matrix4().compose(new Vector3(...n.position), new Quaternion().setFromEuler(toEuler(n.rotation)), scale)
 }
 
 function linearColor(hex: string): RGB {

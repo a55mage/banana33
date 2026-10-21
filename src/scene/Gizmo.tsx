@@ -19,6 +19,16 @@ export function gizmoBusy() {
   return (controlsRef?.axis ?? null) !== null || controlsRef?.dragging === true || performance.now() - lastUse < 250
 }
 
+/** Registra il manipolatore attivo (anche quello delle forme dei modelli 3D) */
+export function setGizmoControls(c: unknown) {
+  controlsRef = (c as Controls | null) ?? null
+}
+
+/** Da chiamare al rilascio del manipolatore: il clic che segue non deve selezionare altro */
+export function noteGizmoUse() {
+  lastUse = performance.now()
+}
+
 const normDeg = (v: number) => ((v % 360) + 360) % 360
 const round = (v: number, step = 1e-4) => Math.round(v / step) * step
 
@@ -153,7 +163,7 @@ export function Gizmo() {
     <>
       <primitive object={proxy} />
       <TransformControls
-        ref={(c: unknown) => void (controlsRef = (c as Controls | null) ?? null)}
+        ref={setGizmoControls}
         object={proxy}
         mode={mode}
         // spostamenti nel riferimento del mondo, rotazione e scala in quello dell'oggetto (come Unity in modalità Local)
@@ -178,7 +188,7 @@ export function Gizmo() {
         onObjectChange={onChange}
         onMouseUp={() => {
           start.current = null
-          lastUse = performance.now()
+          noteGizmoUse()
           syncProxy(proxy, useProject.getState().project, selectedObjectIds())
         }}
       />

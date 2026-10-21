@@ -1,6 +1,5 @@
 import type { Draft } from 'immer'
 import { nanoid } from 'nanoid'
-import { Euler, MathUtils, Matrix4, Quaternion, Vector3 } from 'three'
 import {
   isDescendant,
   newSculptNode,
@@ -10,11 +9,11 @@ import {
   type SculptMaterial,
   type SculptNode,
   type SculptShape,
-  type Vec3,
 } from '../model/sculpt'
 import { useProject } from './projectStore'
 import { useUi } from './uiStore'
 import { getT } from '../i18n'
+import { decompose, localMatrix } from '../sculpt/transform'
 
 /** Documento del modello corrente (null se il progetto non è un modello 3D) */
 export function currentSculpt(): SculptDoc | null {
@@ -147,13 +146,6 @@ export function groupNodes(ids: string[]): string | null {
 
 // ---------- trasformazioni dei gruppi ----------
 
-const toEuler = (r: Vec3) => new Euler(MathUtils.degToRad(r[0]), MathUtils.degToRad(r[1]), MathUtils.degToRad(r[2]), 'YXZ')
-
-function nodeMatrix(n: SculptNode): Matrix4 {
-  const scale = n.kind === 'group' ? new Vector3(...n.size) : new Vector3(1, 1, 1)
-  return new Matrix4().compose(new Vector3(...n.position), new Quaternion().setFromEuler(toEuler(n.rotation)), scale)
-}
-
 /**
  * Scioglie un gruppo: i figli passano al genitore del gruppo nella stessa posizione,
  * con la trasformazione del gruppo "cotta" nelle loro posizione, rotazione e dimensioni.
@@ -162,18 +154,14 @@ export function ungroupNode(groupId: string) {
   const doc = currentSculpt()
   const group = doc?.nodes.find((n) => n.id === groupId)
   if (!doc || !group || group.kind !== 'group') return
-  const gm = nodeMatrix(group)
+  const gm = localMatrix(group)
   const gScale = group.size
   editSculpt((d) => {
     for (const n of d.nodes) {
       if (n.parentId !== groupId) continue
-      const world = gm.clone().multiply(nodeMatrix(n as SculptNode))
-      const pos = new Vector3()
-      const quat = new Quaternion()
-      world.decompose(pos, quat, new Vector3())
-      const e = new Euler().setFromQuaternion(quat, 'YXZ')
-      n.position = [pos.x, pos.y, pos.z]
-      n.rotation = [MathUtils.radToDeg(e.x), MathUtils.radToDeg(e.y), MathUtils.radToDeg(e.z)]
+      const { position, rotation } = decompose(gm.clone().multiply(localMatrix(n as SculptNode)))
+      n.position = position
+      n.rotation = rotation
       // la scala del gruppo si trasferisce alle dimensioni (esatta per scale uniformi)
       n.size = [n.size[0] * gScale[0], n.size[1] * gScale[1], n.size[2] * gScale[2]]
       n.parentId = group.parentId

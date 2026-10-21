@@ -38,6 +38,7 @@ import { useT } from '../i18n'
 import { NumField } from './NumField'
 import { Icon } from './Icon'
 import { ObjectList } from './ObjectList'
+import { NodeInspector } from './ModelPanels'
 
 const normDeg = (v: number) => ((v % 360) + 360) % 360
 
@@ -341,8 +342,13 @@ export function PropertiesPanel() {
     }
   }
 
-  // nei modelli 3D l'inspector delle forme arriva con la fase successiva
-  if (project.kind === 'model') return <aside className="panel right" />
+  if (project.kind === 'model') {
+    return (
+      <aside className="panel right">
+        <NodeInspector />
+      </aside>
+    )
+  }
   return (
     <aside className="panel right">
       <section>

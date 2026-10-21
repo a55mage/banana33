@@ -18,6 +18,7 @@ import { useT } from '../i18n'
 import { NumField } from './NumField'
 import { Icon, PRESET_ICONS, type IconSource } from './Icon'
 import { KIND_ICONS } from './NewProjectDialog'
+import { ModelLeftPanel } from './ModelPanels'
 
 /** Dimensioni del contenitore: presente solo (e sempre) nei progetti Spazio */
 function SpaceSection() {
@@ -223,24 +224,13 @@ function ProjectsSection() {
   )
 }
 
-/** Segnaposto della modalità Modello 3D finché non arrivano i suoi strumenti */
-function ModelSection() {
-  const t = useT()
-  return (
-    <section>
-      <h3>{t.sculpt.title}</h3>
-      <p className="hint">{t.sculpt.toolsSoon}</p>
-    </section>
-  )
-}
-
 export function LeftPanel() {
   const projectId = useProject((s) => s.project.id)
   const kind = useProject((s) => s.project.kind)
   if (kind === 'model') {
     return (
       <aside className="panel left">
-        <ModelSection />
+        <ModelLeftPanel />
         <ProjectsSection />
       </aside>
     )
